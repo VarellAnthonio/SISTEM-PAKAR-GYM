@@ -1,26 +1,8 @@
-# dependencies
-/node_modules
-
-# logs
-logs
-*.log
-npm-debug.log*
-
-# dotenv environment variables file
+node_modules/
 .env
-
-# production
-/build
-
-# misc
+.env.local
+.env.production
+npm-debug.log*
 .DS_Store
-
-# uploads folder
-/uploads/*
-!/uploads/.gitkeep
-
-# testing
-/coverage
-
-# temp files
-.tmp
+.vscode/
+.idea/
