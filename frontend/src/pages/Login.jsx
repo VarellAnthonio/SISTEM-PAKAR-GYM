@@ -59,7 +59,12 @@ const Login = () => {
     setLoading(false);
 
     if (result.success) {
-      navigate(from, { replace: true });
+      // Redirect based on role
+      if (result.user?.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     }
   };
 

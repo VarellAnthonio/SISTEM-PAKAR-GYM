@@ -29,6 +29,9 @@ export const registerValidator = [
   body('password')
     .notEmpty().withMessage('Password is required')
     .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('gender')
+    .notEmpty().withMessage('Gender is required')
+    .isIn(['male', 'female']).withMessage('Gender must be either male or female'),
   body('role')
     .optional()
     .isIn(['user', 'admin']).withMessage('Invalid role')

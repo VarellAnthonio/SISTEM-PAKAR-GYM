@@ -6,7 +6,7 @@ import { generateToken } from '../utils/jwt.js';
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role = 'user' } = req.body;
+    const { name, email, password, gender, role = 'user' } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ where: { email } });
@@ -22,6 +22,7 @@ export const register = async (req, res) => {
       name,
       email,
       password,
+      gender,
       role
     });
 
@@ -38,6 +39,21 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error);
+    
+    // Handle Sequelize validation errors
+    if (error.name === 'SequelizeValidationError') {
+      const validationErrors = error.errors.map(err => ({
+        field: err.path,
+        message: err.message
+      }));
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: validationErrors
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || 'Server error during registration'

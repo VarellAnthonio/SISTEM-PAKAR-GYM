@@ -49,6 +49,19 @@ const User = sequelize.define('User', {
       }
     }
   },
+  gender: {
+    type: DataTypes.ENUM('male', 'female'),
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Gender is required'
+      },
+      isIn: {
+        args: [['male', 'female']],
+        msg: 'Gender must be either male or female'
+      }
+    }
+  },
   role: {
     type: DataTypes.ENUM('user', 'admin'),
     defaultValue: 'user',

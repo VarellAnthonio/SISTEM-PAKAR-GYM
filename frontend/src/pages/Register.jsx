@@ -12,7 +12,8 @@ const Register = () => {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    gender: ''
   });
   const [errors, setErrors] = useState({});
 
@@ -58,11 +59,15 @@ const Register = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!formData.gender) {
+      newErrors.gender = 'Gender is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -73,6 +78,7 @@ const Register = () => {
     setLoading(false);
 
     if (result.success) {
+      // Redirect based on role (register always creates regular user)
       navigate('/');
     }
   };
@@ -131,6 +137,27 @@ const Register = () => {
               />
               {errors.email && (
                 <p className="error-text">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="gender" className="label">
+                Gender
+              </label>
+              <select
+                id="gender"
+                name="gender"
+                required
+                className={`input ${errors.gender ? 'border-red-300' : ''}`}
+                value={formData.gender}
+                onChange={handleChange}
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              {errors.gender && (
+                <p className="error-text">{errors.gender}</p>
               )}
             </div>
             
