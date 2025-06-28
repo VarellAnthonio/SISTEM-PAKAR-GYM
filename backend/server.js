@@ -2,8 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import sequelize, { testConnection } from './config/database.js';
+
+// Import all models to ensure they are loaded
+import { User, Program, Exercise, Rule, Consultation } from './models/index.js';
+import { Op } from 'sequelize';
+
+// Import routes
 import authRoutes from './routes/authRoutes.js';
-import User from './models/User.js';
+import consultationRoutes from './routes/consultationRoutes.js';
+import programRoutes from './routes/programRoutes.js';
 
 // Load env vars
 dotenv.config();
@@ -21,13 +28,64 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/consultations', consultationRoutes);
+app.use('/api/programs', programRoutes);
 
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Server is running',
-    timestamp: new Date().toISOString()
+// Health check route with database info
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    await sequelize.authenticate();
+    
+    // Get basic stats
+    const stats = {
+      users: await User.count(),
+      programs: await Program.count(),
+      exercises: await Exercise.count(),
+      rules: await Rule.count(),
+      consultations: await Consultation.count()
+    };
+
+    res.json({ 
+      status: 'OK', 
+      message: 'Server is running',
+      database: 'Connected',
+      timestamp: new Date().toISOString(),
+      stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Database connection failed',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
+
+// API info route
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'Sistem Pakar Program Olahraga API',
+    version: '1.0.0',
+    description: 'Expert system for fitness program recommendations using forward chaining',
+    endpoints: {
+      auth: '/api/auth/*',
+      consultations: '/api/consultations/*',
+      programs: '/api/programs/*',
+      health: '/api/health',
+      info: '/api'
+    },
+    models: ['User', 'Program', 'Exercise', 'Rule', 'Consultation'],
+    features: [
+      'JWT Authentication',
+      'Role-based Access Control', 
+      'Forward Chaining Algorithm',
+      'BMI & Body Fat Analysis',
+      'Program Recommendations',
+      'Consultation Management',
+      'Program CRUD Operations'
+    ]
   });
 });
 
@@ -45,11 +103,24 @@ app.use((err, req, res, next) => {
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'Route not found',
+    availableEndpoints: [
+      'GET /api',
+      'GET /api/health',
+      'POST /api/auth/register',
+      'POST /api/auth/login',
+      'GET /api/auth/me',
+      'POST /api/auth/logout',
+      'GET /api/consultations',
+      'POST /api/consultations',
+      'GET /api/consultations/:id',
+      'GET /api/programs',
+      'GET /api/programs/:code'
+    ]
   });
 });
 
-// Auto-seed admin function
+// Auto-seed admin function (updated)
 const autoSeedAdmin = async () => {
   try {
     // Check if admin already exists
@@ -73,38 +144,10 @@ const autoSeedAdmin = async () => {
       console.log('👤 Gender: male');
       console.log('⚠️  Please change the password after first login!');
     } else {
-      // Check if existing admin has gender field
-      if (!admin.gender) {
-        console.log('🔄 Updating existing admin with gender...');
-        await admin.update({ gender: 'male' });
-        console.log('✅ Admin gender updated');
-      } else {
-        console.log('✅ Admin user already exists');
-      }
+      console.log('✅ Admin user already exists');
     }
   } catch (error) {
     console.error('❌ Error auto-seeding admin:', error.message);
-    
-    // If validation error, try to fix by recreating
-    if (error.name === 'SequelizeValidationError') {
-      console.log('🔄 Trying to recreate admin due to validation error...');
-      try {
-        // Delete existing admin if any
-        await User.destroy({ where: { email: 'admin@gymsporra.com' } });
-        
-        // Create fresh admin
-        const newAdmin = await User.create({
-          name: 'Administrator',
-          email: 'admin@gymsporra.com',
-          password: 'admin123',
-          gender: 'male',
-          role: 'admin'
-        });
-        console.log('✅ Admin recreated successfully');
-      } catch (recreateError) {
-        console.error('❌ Failed to recreate admin:', recreateError.message);
-      }
-    }
   }
 };
 
@@ -121,8 +164,9 @@ const startServer = async () => {
 
     // Sync database
     if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ force: true });
-      console.log('📊 Database synced successfully (tables recreated)');
+      // In development, force recreate tables to fix any schema issues
+      await sequelize.sync({ force: false }); // Changed back to false to preserve data
+      console.log('📊 Database synced successfully');
     } else {
       await sequelize.sync({ alter: true });
       console.log('📊 Database synced successfully');
@@ -130,14 +174,44 @@ const startServer = async () => {
     
     // Auto-seed admin user
     await autoSeedAdmin();
+
+    // Get current stats
+    const stats = {
+      users: await User.count(),
+      programs: await Program.count(),
+      exercises: await Exercise.count(),
+      rules: await Rule.count(),
+      consultations: await Consultation.count()
+    };
+
+    console.log('📊 Current database stats:', stats);
     
     // Start listening
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 API URL: http://localhost:${PORT}/api`);
+      console.log(`🔍 Health Check: http://localhost:${PORT}/api/health`);
+      console.log('');
+      console.log('🎯 Available API Endpoints:');
+      console.log('  📝 Authentication: /api/auth/*');
+      console.log('  🏋️ Consultations: /api/consultations/*');
+      console.log('  📋 Programs: /api/programs/*');
+      console.log('  📊 Health Check: /api/health');
+      console.log('');
+      
+      if (stats.programs === 0) {
+        console.log('⚠️  No programs found in database!');
+        console.log('💡 Run seeding to populate with sample data:');
+        console.log('   npm run seed');
+      } else {
+        console.log('✅ Database ready with seeded data');
+        console.log('🔑 Admin Login: admin@gymsporra.com / admin123');
+        console.log('👤 Sample User: john@example.com / password123');
+      }
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 };

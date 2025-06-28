@@ -1,7 +1,58 @@
+import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
 import { UsersIcon, ClipboardDocumentListIcon, CogIcon, ChartBarIcon, PlayIcon } from '@heroicons/react/24/outline';
+import { consultationService } from '../../services/consultation';
+import { programService } from '../../services/program';
+import { apiService } from '../../services/api';
+import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
+  const [stats, setStats] = useState({
+    users: 0,
+    programs: 0,
+    exercises: 0,
+    rules: 0,
+    consultations: 0
+  });
+  const [consultationStats, setConsultationStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [recentConsultations, setRecentConsultations] = useState([]);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch basic stats from health endpoint
+        const healthResponse = await apiService.health();
+        if (healthResponse.data.stats) {
+          setStats(healthResponse.data.stats);
+        }
+
+        // Fetch consultation statistics
+        const consultationStatsResult = await consultationService.admin.getStats();
+        if (consultationStatsResult.success) {
+          setConsultationStats(consultationStatsResult.data);
+        }
+
+        // Fetch recent consultations
+        const recentConsultationsResult = await consultationService.admin.getAll({ limit: 5 });
+        if (recentConsultationsResult.success) {
+          setRecentConsultations(recentConsultationsResult.data.consultations || []);
+        }
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        toast.error('Gagal memuat data dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   const menuItems = [
     {
       title: 'Program Olahraga',
@@ -9,7 +60,7 @@ const AdminDashboard = () => {
       icon: ClipboardDocumentListIcon,
       color: 'bg-blue-500',
       link: '/admin/programs',
-      count: '10 Program'
+      count: `${stats.programs} Program`
     },
     {
       title: 'Aturan Sistem',
@@ -17,7 +68,7 @@ const AdminDashboard = () => {
       icon: CogIcon,
       color: 'bg-purple-500',
       link: '/admin/rules',
-      count: '15 Rules'
+      count: `${stats.rules} Rules`
     },
     {
       title: 'Riwayat Konsultasi',
@@ -25,7 +76,7 @@ const AdminDashboard = () => {
       icon: ChartBarIcon,
       color: 'bg-orange-500',
       link: '/admin/consultations',
-      count: '245 Konsultasi'
+      count: `${stats.consultations} Konsultasi`
     },
     {
       title: 'Gerakan Latihan',
@@ -33,7 +84,7 @@ const AdminDashboard = () => {
       icon: PlayIcon,
       color: 'bg-green-500',
       link: '/admin/exercises',
-      count: '50+ Gerakan'
+      count: `${stats.exercises} Gerakan`
     },
     {
       title: 'Kelola Pengguna',
@@ -41,9 +92,30 @@ const AdminDashboard = () => {
       icon: UsersIcon,
       color: 'bg-red-500',
       link: '/admin/users',
-      count: '128 Users'
+      count: `${stats.users} Users`
     }
   ];
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <AdminSidebarLayout>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </AdminSidebarLayout>
+    );
+  }
 
   return (
     <AdminSidebarLayout>
@@ -63,7 +135,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Program</p>
-                <p className="text-2xl font-semibold text-gray-900">10</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.programs}</p>
               </div>
             </div>
           </div>
@@ -75,7 +147,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-semibold text-gray-900">128</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.users}</p>
               </div>
             </div>
           </div>
@@ -87,7 +159,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Konsultasi</p>
-                <p className="text-2xl font-semibold text-gray-900">245</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.consultations}</p>
               </div>
             </div>
           </div>
@@ -99,11 +171,47 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Gerakan</p>
-                <p className="text-2xl font-semibold text-gray-900">50+</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.exercises}</p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Additional Stats from Consultation API */}
+        {consultationStats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Konsultasi Hari Ini</h3>
+              <p className="text-3xl font-bold text-blue-600">{consultationStats.today}</p>
+              <p className="text-sm text-gray-500 mt-1">Dari total {consultationStats.total} konsultasi</p>
+            </div>
+
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">User Aktif</h3>
+              <p className="text-3xl font-bold text-green-600">{consultationStats.activeUsers}</p>
+              <p className="text-sm text-gray-500 mt-1">30 hari terakhir</p>
+            </div>
+
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Program Populer</h3>
+              {consultationStats.programStats && consultationStats.programStats.length > 0 ? (
+                <div>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {consultationStats.programStats[0].program.code}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {consultationStats.programStats[0].program.name}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {consultationStats.programStats[0].count} konsultasi
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-500">Belum ada data</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Menu Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -129,40 +237,26 @@ const AdminDashboard = () => {
 
         {/* Recent Activity */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Aktivitas Terbaru</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">John Doe melakukan konsultasi</p>
-                <p className="text-sm text-gray-500">Mendapat rekomendasi Program P2 - Muscle Gain</p>
-              </div>
-              <p className="text-sm text-gray-400">2 jam yang lalu</p>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Konsultasi Terbaru</h2>
+          {recentConsultations.length > 0 ? (
+            <div className="space-y-4">
+              {recentConsultations.map((consultation) => (
+                <div key={consultation.id} className="flex items-center justify-between border-b border-gray-200 pb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {consultation.user?.name} melakukan konsultasi
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Program: {consultation.program?.code} - BMI: {consultation.bmiDisplay}, Body Fat: {consultation.bodyFatDisplay}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-400">{formatDate(consultation.createdAt)}</p>
+                </div>
+              ))}
             </div>
-            
-            <div className="flex items-center justify-between border-b border-gray-200 pb-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">User baru terdaftar</p>
-                <p className="text-sm text-gray-500">Jane Smith bergabung dengan sistem</p>
-              </div>
-              <p className="text-sm text-gray-400">5 jam yang lalu</p>
-            </div>
-            
-            <div className="flex items-center justify-between border-b border-gray-200 pb-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Program P5 diakses</p>
-                <p className="text-sm text-gray-500">Alice Brown menggunakan Program Shred & Shape</p>
-              </div>
-              <p className="text-sm text-gray-400">1 hari yang lalu</p>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Data gerakan diperbarui</p>
-                <p className="text-sm text-gray-500">Video tutorial Squat ditambahkan</p>
-              </div>
-              <p className="text-sm text-gray-400">2 hari yang lalu</p>
-            </div>
-          </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">Belum ada konsultasi terbaru</p>
+          )}
         </div>
 
         {/* System Info */}
@@ -179,28 +273,26 @@ const AdminDashboard = () => {
                 <span className="text-sm font-medium text-green-600">✓ Active</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-blue-800">User Sessions</span>
-                <span className="text-sm font-medium text-blue-600">24 Active</span>
+                <span className="text-sm text-blue-800">API Endpoints</span>
+                <span className="text-sm font-medium text-green-600">✓ Operational</span>
               </div>
             </div>
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-green-900 mb-3">Program Populer</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-green-800">P2 - Muscle Gain</span>
-                <span className="text-sm font-medium text-green-600">35%</span>
+            <h3 className="text-lg font-semibold text-green-900 mb-3">Program Distribution</h3>
+            {consultationStats?.programStats && consultationStats.programStats.length > 0 ? (
+              <div className="space-y-2">
+                {consultationStats.programStats.slice(0, 3).map((stat) => (
+                  <div key={stat.program.id} className="flex justify-between">
+                    <span className="text-sm text-green-800">{stat.program.code} - {stat.program.name}</span>
+                    <span className="text-sm font-medium text-green-600">{stat.count}</span>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-green-800">P1 - Fat Loss</span>
-                <span className="text-sm font-medium text-green-600">28%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-green-800">P3 - Maintenance</span>
-                <span className="text-sm font-medium text-green-600">22%</span>
-              </div>
-            </div>
+            ) : (
+              <p className="text-sm text-green-800">Belum ada data distribusi program</p>
+            )}
           </div>
         </div>
       </div>

@@ -16,21 +16,35 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Initialize authentication on mount
   useEffect(() => {
-    // Check if user is logged in on mount
     const initAuth = async () => {
       try {
-        const currentUser = authService.getCurrentUser();
-        if (currentUser && authService.isAuthenticated()) {
-          // Verify token is still valid
-          const response = await authService.getMe();
-          setUser(response.data);
+        console.log('Initializing authentication...');
+        
+        // Check if user is logged in
+        if (authService.isAuthenticated()) {
+          console.log('Found existing auth, validating...');
+          
+          // Validate token with server
+          const isValid = await authService.validateAuth();
+          if (isValid) {
+            const currentUser = authService.getCurrentUser();
+            setUser(currentUser);
+            console.log('Authentication validated:', currentUser);
+          } else {
+            console.log('Authentication validation failed');
+            setUser(null);
+          }
+        } else {
+          console.log('No existing authentication found');
+          setUser(null);
         }
       } catch (error) {
-        console.error('Auth init error:', error);
-        // Token invalid, clear storage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        console.error('Auth initialization error:', error);
+        // Clear potentially corrupted auth state
+        authService.logout();
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -41,52 +55,139 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
+      setLoading(true);
+      console.log('Attempting login with:', credentials.email);
+      
       const response = await authService.login(credentials);
-      setUser(response.data.user);
-      toast.success('Login successful!');
-      return { success: true };
+      
+      if (response.success && response.data) {
+        setUser(response.data.user);
+        toast.success('Login successful!');
+        console.log('Login successful:', response.data.user);
+        
+        return { 
+          success: true, 
+          user: response.data.user 
+        };
+      }
+      
+      throw new Error(response.message || 'Login failed');
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      console.error('Login error:', error);
+      const message = error.message || 'Login failed';
       toast.error(message);
-      return { success: false, message };
+      
+      return { 
+        success: false, 
+        message 
+      };
+    } finally {
+      setLoading(false);
     }
   };
 
   const register = async (userData) => {
     try {
+      setLoading(true);
+      console.log('Attempting registration with:', userData.email);
+      
       const response = await authService.register(userData);
-      setUser(response.data.user);
-      toast.success('Registration successful!');
-      return { success: true };
+      
+      if (response.success && response.data) {
+        setUser(response.data.user);
+        toast.success('Registration successful!');
+        console.log('Registration successful:', response.data.user);
+        
+        return { 
+          success: true, 
+          user: response.data.user 
+        };
+      }
+      
+      throw new Error(response.message || 'Registration failed');
     } catch (error) {
-      const message = error.response?.data?.message || 'Registration failed';
+      console.error('Registration error:', error);
+      const message = error.message || 'Registration failed';
       toast.error(message);
-      return { success: false, message };
+      
+      return { 
+        success: false, 
+        message,
+        errors: error.errors || []
+      };
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      console.log('Logging out...');
       await authService.logout();
       setUser(null);
       toast.success('Logged out successfully');
+      console.log('Logout completed');
     } catch (error) {
       console.error('Logout error:', error);
-      // Clear local data even if API call fails
+      // Still clear local state even if API call fails
       setUser(null);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      toast.error('Logout completed with errors');
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      if (authService.isAuthenticated()) {
+        const response = await authService.getMe();
+        if (response.success && response.data) {
+          setUser(response.data);
+          return response.data;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Refresh user error:', error);
+      return null;
+    }
+  };
+
+  // Check if user has specific role
+  const hasRole = (role) => {
+    return user?.role === role;
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    return user?.name || 'User';
+  };
+
+  // Check if user is verified/active
+  const isUserActive = () => {
+    return user?.isActive !== false;
+  };
+
   const value = {
+    // State
     user,
     loading,
+    
+    // Computed properties
+    isAuthenticated: !!user,
+    isAdmin: user?.role === 'admin',
+    isUser: user?.role === 'user',
+    
+    // Methods
     login,
     register,
     logout,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin'
+    refreshUser,
+    hasRole,
+    getUserDisplayName,
+    isUserActive,
+    
+    // Utilities
+    getToken: authService.getToken,
+    getCurrentUser: authService.getCurrentUser
   };
 
   return (
