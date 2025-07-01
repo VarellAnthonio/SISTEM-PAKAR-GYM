@@ -79,21 +79,40 @@ const Consultation = () => {
     }
   };
 
+  // COMPLETE P1-P10 FORWARD CHAINING MAPPING
   const getProgramCode = (bmiCategory, bodyFatCategory) => {
     const mapping = {
-      'B1-L1': 'P1', // Underweight + Rendah
-      'B2-L2': 'P2', // Ideal + Normal
-      'B3-L3': 'P3', // Overweight + Tinggi
-      'B4-L3': 'P4', // Obese + Tinggi
-      'B1-L2': 'P5', // Underweight + Normal
-      'B2-L1': 'P6', // Ideal + Rendah
-      'B2-L3': 'P7', // Ideal + Tinggi
-      'B3-L2': 'P8', // Overweight + Normal
-      'B1-L3': 'P9', // Underweight + Tinggi
-      'B3-L1': 'P10' // Overweight + Rendah
+      'B1-L1': 'P1', // Underweight + Rendah → Fat Loss Program
+      'B2-L2': 'P2', // Ideal + Normal → Muscle Gain Program
+      'B3-L3': 'P3', // Overweight + Tinggi → Weight Loss Program
+      'B4-L3': 'P4', // Obese + Tinggi → Extreme Weight Loss Program
+      'B1-L2': 'P5', // Underweight + Normal → Lean Muscle Program
+      'B2-L1': 'P6', // Ideal + Rendah → Strength & Definition Program
+      'B2-L3': 'P7', // Ideal + Tinggi → Fat Burning & Toning Program
+      'B3-L2': 'P8', // Overweight + Normal → Body Recomposition Program
+      'B1-L3': 'P9', // Underweight + Tinggi → Beginner Muscle Building Program
+      'B3-L1': 'P10' // Overweight + Rendah → Advanced Strength Program
     };
     
-    return mapping[`${bmiCategory}-${bodyFatCategory}`] || 'P2'; // Default to P2
+    const key = `${bmiCategory}-${bodyFatCategory}`;
+    return mapping[key] || 'P2'; // Default to P2 if no exact match
+  };
+
+  // Get program name for display
+  const getProgramName = (programCode) => {
+    const programNames = {
+      'P1': 'Fat Loss Program',
+      'P2': 'Muscle Gain Program',
+      'P3': 'Weight Loss Program',
+      'P4': 'Extreme Weight Loss Program',
+      'P5': 'Lean Muscle Program',
+      'P6': 'Strength & Definition Program',
+      'P7': 'Fat Burning & Toning Program',
+      'P8': 'Body Recomposition Program',
+      'P9': 'Beginner Muscle Building Program',
+      'P10': 'Advanced Strength Program'
+    };
+    return programNames[programCode] || 'Default Program';
   };
 
   const handleSubmit = async (e) => {
@@ -109,9 +128,9 @@ const Consultation = () => {
       const bmiCategory = getBMICategory(bmi);
       const bodyFatCategory = getBodyFatCategory(parseFloat(formData.bodyFatPercentage), user.gender);
       const programCode = getProgramCode(bmiCategory, bodyFatCategory);
+      const programName = getProgramName(programCode);
       
-      // For now, we'll navigate to results page with data
-      // Later this will be an API call
+      // Create consultation result
       const consultationResult = {
         user: user.name,
         weight: formData.weight,
@@ -121,8 +140,25 @@ const Consultation = () => {
         bmiCategory,
         bodyFatCategory,
         programCode,
+        programName,
         timestamp: new Date().toISOString()
       };
+      
+      console.log('Forward Chaining Result:', {
+        input: {
+          bmi: bmi.toFixed(1),
+          bodyFat: formData.bodyFatPercentage,
+          gender: user.gender
+        },
+        categories: {
+          bmi: bmiCategory,
+          bodyFat: bodyFatCategory
+        },
+        result: {
+          program: programCode,
+          name: programName
+        }
+      });
       
       // Navigate to results page with data
       navigate('/consultation/result', { 
@@ -131,7 +167,7 @@ const Consultation = () => {
       
     } catch (error) {
       console.error('Consultation error:', error);
-      // Handle error - show toast or error message
+      setErrors({ general: 'Terjadi kesalahan dalam proses konsultasi' });
     } finally {
       setLoading(false);
     }
@@ -146,6 +182,13 @@ const Consultation = () => {
         
         <div className="bg-white rounded-lg shadow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* General Error */}
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
+
             {/* Berat Badan */}
             <div>
               <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-2">
@@ -225,14 +268,79 @@ const Consultation = () => {
           </form>
         </div>
 
-        {/* Info Box */}
+        {/* Forward Chaining Info */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Informasi:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Pastikan data yang dimasukkan akurat untuk hasil yang optimal</li>
-            <li>• Persentase lemak tubuh dapat diukur menggunakan alat body fat analyzer</li>
-            <li>• Konsultasi dengan ahli gizi jika memerlukan panduan lebih lanjut</li>
+          <h3 className="text-sm font-medium text-blue-900 mb-2">Sistem Forward Chaining:</h3>
+          <div className="text-sm text-blue-800 space-y-1">
+            <p>• Sistem akan menganalisis BMI dan persentase lemak tubuh Anda</p>
+            <p>• Forward chaining akan menentukan program yang tepat dari P1-P10</p>
+            <p>• Program disesuaikan dengan gender ({user.gender === 'male' ? 'Pria' : 'Wanita'})</p>
+          </div>
+        </div>
+
+        {/* Program Categories Info */}
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-green-900 mb-2">Program yang Tersedia:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-green-800">
+            <div>
+              <p>• P1: Fat Loss Program</p>
+              <p>• P2: Muscle Gain Program</p>
+              <p>• P3: Weight Loss Program</p>
+              <p>• P4: Extreme Weight Loss</p>
+              <p>• P5: Lean Muscle Program</p>
+            </div>
+            <div>
+              <p>• P6: Strength & Definition</p>
+              <p>• P7: Fat Burning & Toning</p>
+              <p>• P8: Body Recomposition</p>
+              <p>• P9: Beginner Muscle Building</p>
+              <p>• P10: Advanced Strength</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Body Fat Reference */}
+        <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-purple-900 mb-2">
+            Referensi Persentase Lemak ({user.gender === 'male' ? 'Pria' : 'Wanita'}):
+          </h3>
+          <div className="text-sm text-purple-800">
+            {user.gender === 'male' ? (
+              <div className="space-y-1">
+                <p>• Rendah (L1): &lt; 10%</p>
+                <p>• Normal (L2): 10-20%</p>
+                <p>• Tinggi (L3): &gt; 20%</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <p>• Rendah (L1): &lt; 20%</p>
+                <p>• Normal (L2): 20-30%</p>
+                <p>• Tinggi (L3): &gt; 30%</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tips Box */}
+        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-yellow-900 mb-2">Tips untuk Hasil Optimal:</h3>
+          <ul className="text-sm text-yellow-800 space-y-1">
+            <li>• Pastikan data yang dimasukkan akurat</li>
+            <li>• Ukur persentase lemak tubuh menggunakan alat yang tepat</li>
+            <li>• Konsultasi dilakukan sebaiknya di pagi hari setelah bangun tidur</li>
+            <li>• Gunakan kalkulator kesehatan jika belum tahu persentase lemak tubuh</li>
+            <li>• Konsistensi pengukuran akan memberikan hasil yang lebih baik</li>
           </ul>
+        </div>
+
+        {/* Quick Link to Calculator */}
+        <div className="mt-4">
+          <button
+            onClick={() => navigate('/calculator')}
+            className="w-full px-4 py-2 bg-green-100 border border-green-300 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200"
+          >
+            💡 Belum tahu persentase lemak tubuh? Gunakan Kalkulator Kesehatan
+          </button>
         </div>
       </div>
     </SidebarLayout>

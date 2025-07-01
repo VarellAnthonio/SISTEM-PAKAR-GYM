@@ -59,6 +59,20 @@ export const apiService = {
     delete: (id) => api.delete(`/programs/${id}`)
   },
 
+  // Rules - NEW ENDPOINTS
+  rules: {
+    getAll: (params = {}) => api.get('/rules', { params }),
+    getById: (id) => api.get(`/rules/${id}`),
+    getStats: () => api.get('/rules/stats'),
+    getMissingCombinations: () => api.get('/rules/missing-combinations'),
+    testForwardChaining: (data) => api.post('/rules/test-forward-chaining', data),
+    create: (data) => api.post('/rules', data),
+    update: (id, data) => api.put(`/rules/${id}`, data),
+    delete: (id) => api.delete(`/rules/${id}`),
+    toggleStatus: (id) => api.patch(`/rules/${id}/toggle`),
+    bulkCreate: (data) => api.post('/rules/bulk', data)
+  },
+
   // Consultations
   consultations: {
     create: (data) => api.post('/consultations', data),

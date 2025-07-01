@@ -11,6 +11,7 @@ import { Op } from 'sequelize';
 import authRoutes from './routes/authRoutes.js';
 import consultationRoutes from './routes/consultationRoutes.js';
 import programRoutes from './routes/programRoutes.js';
+import ruleRoutes from './routes/ruleRoutes.js'; // ← NEW: Rule routes
 
 // Load env vars
 dotenv.config();
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/programs', programRoutes);
+app.use('/api/rules', ruleRoutes); // ← NEW: Rule management routes
 
 // Health check route with database info
 app.get('/api/health', async (req, res) => {
@@ -42,7 +44,7 @@ app.get('/api/health', async (req, res) => {
       users: await User.count(),
       programs: await Program.count(),
       exercises: await Exercise.count(),
-      rules: await Rule.count(),
+      rules: await Rule.count(), // ← Include rule count
       consultations: await Consultation.count()
     };
 
@@ -73,6 +75,7 @@ app.get('/api', (req, res) => {
       auth: '/api/auth/*',
       consultations: '/api/consultations/*',
       programs: '/api/programs/*',
+      rules: '/api/rules/*', // ← NEW: Rule endpoints
       health: '/api/health',
       info: '/api'
     },
@@ -84,7 +87,9 @@ app.get('/api', (req, res) => {
       'BMI & Body Fat Analysis',
       'Program Recommendations',
       'Consultation Management',
-      'Program CRUD Operations'
+      'Program CRUD Operations',
+      'Rule Management System', // ← NEW: Rule management
+      'Real-time Forward Chaining Testing' // ← NEW: FC testing
     ]
   });
 });
@@ -115,7 +120,15 @@ app.use('*', (req, res) => {
       'POST /api/consultations',
       'GET /api/consultations/:id',
       'GET /api/programs',
-      'GET /api/programs/:code'
+      'GET /api/programs/:code',
+      'GET /api/rules', // ← NEW: Rule endpoints
+      'POST /api/rules',
+      'PUT /api/rules/:id',
+      'DELETE /api/rules/:id',
+      'PATCH /api/rules/:id/toggle',
+      'GET /api/rules/stats',
+      'GET /api/rules/missing-combinations',
+      'POST /api/rules/test-forward-chaining'
     ]
   });
 });
@@ -164,8 +177,8 @@ const startServer = async () => {
 
     // Sync database
     if (process.env.NODE_ENV === 'development') {
-      // In development, force recreate tables to fix any schema issues
-      await sequelize.sync({ force: false }); // Changed back to false to preserve data
+      // In development, preserve data but update schema if needed
+      await sequelize.sync({ force: false, alter: true });
       console.log('📊 Database synced successfully');
     } else {
       await sequelize.sync({ alter: true });
@@ -180,7 +193,7 @@ const startServer = async () => {
       users: await User.count(),
       programs: await Program.count(),
       exercises: await Exercise.count(),
-      rules: await Rule.count(),
+      rules: await Rule.count(), // ← Include rule count
       consultations: await Consultation.count()
     };
 
@@ -197,6 +210,7 @@ const startServer = async () => {
       console.log('  📝 Authentication: /api/auth/*');
       console.log('  🏋️ Consultations: /api/consultations/*');
       console.log('  📋 Programs: /api/programs/*');
+      console.log('  ⚙️ Rules: /api/rules/*'); // ← NEW: Rule endpoints
       console.log('  📊 Health Check: /api/health');
       console.log('');
       
@@ -206,8 +220,17 @@ const startServer = async () => {
         console.log('   npm run seed');
       } else {
         console.log('✅ Database ready with seeded data');
+        console.log(`📋 Programs: ${stats.programs} | Rules: ${stats.rules} | Users: ${stats.users}`);
         console.log('🔑 Admin Login: admin@gymsporra.com / admin123');
         console.log('👤 Sample User: john@example.com / password123');
+      }
+      
+      // Rule management info
+      if (stats.rules === 0) {
+        console.log('⚠️  No forward chaining rules found!');
+        console.log('💡 Create rules via Admin Panel: /admin/rules');
+      } else {
+        console.log(`✅ Forward Chaining: ${stats.rules} rules active`);
       }
     });
   } catch (error) {

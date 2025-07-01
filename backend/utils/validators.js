@@ -150,6 +150,116 @@ export const updateProgramValidator = [
     .isBoolean().withMessage('isActive must be a boolean')
 ];
 
+// NEW: Rule validators
+export const ruleValidator = [
+  body('name')
+    .notEmpty().withMessage('Rule name is required')
+    .isLength({ min: 2, max: 100 }).withMessage('Rule name must be between 2 and 100 characters'),
+  
+  body('description')
+    .optional()
+    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters'),
+  
+  body('bmiCategory')
+    .notEmpty().withMessage('BMI category is required')
+    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
+  
+  body('bodyFatCategory')
+    .notEmpty().withMessage('Body fat category is required')
+    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
+  
+  body('programId')
+    .notEmpty().withMessage('Program ID is required')
+    .isInt({ min: 1 }).withMessage('Program ID must be a valid integer'),
+  
+  body('priority')
+    .optional()
+    .isInt({ min: 1 }).withMessage('Priority must be a positive integer'),
+  
+  body('conditions')
+    .optional()
+    .isObject().withMessage('Conditions must be an object'),
+  
+  body('isActive')
+    .optional()
+    .isBoolean().withMessage('isActive must be a boolean')
+];
+
+export const updateRuleValidator = [
+  body('name')
+    .optional()
+    .isLength({ min: 2, max: 100 }).withMessage('Rule name must be between 2 and 100 characters'),
+  
+  body('description')
+    .optional()
+    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters'),
+  
+  body('bmiCategory')
+    .optional()
+    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
+  
+  body('bodyFatCategory')
+    .optional()
+    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
+  
+  body('programId')
+    .optional()
+    .isInt({ min: 1 }).withMessage('Program ID must be a valid integer'),
+  
+  body('priority')
+    .optional()
+    .isInt({ min: 1 }).withMessage('Priority must be a positive integer'),
+  
+  body('conditions')
+    .optional()
+    .isObject().withMessage('Conditions must be an object'),
+  
+  body('isActive')
+    .optional()
+    .isBoolean().withMessage('isActive must be a boolean')
+];
+
+// Forward chaining test validator
+export const forwardChainingTestValidator = [
+  body('weight')
+    .notEmpty().withMessage('Weight is required')
+    .isFloat({ min: 1, max: 500 }).withMessage('Weight must be between 1 and 500 kg'),
+  
+  body('height')
+    .notEmpty().withMessage('Height is required')
+    .isFloat({ min: 50, max: 300 }).withMessage('Height must be between 50 and 300 cm'),
+  
+  body('bodyFatPercentage')
+    .notEmpty().withMessage('Body fat percentage is required')
+    .isFloat({ min: 1, max: 70 }).withMessage('Body fat percentage must be between 1 and 70%'),
+  
+  body('gender')
+    .notEmpty().withMessage('Gender is required')
+    .isIn(['male', 'female']).withMessage('Gender must be either male or female')
+];
+
+// Bulk rules validator
+export const bulkRulesValidator = [
+  body('rules')
+    .isArray({ min: 1 }).withMessage('Rules must be an array with at least one rule'),
+  
+  body('rules.*.name')
+    .notEmpty().withMessage('Each rule must have a name')
+    .isLength({ min: 2, max: 100 }).withMessage('Rule name must be between 2 and 100 characters'),
+  
+  body('rules.*.bmiCategory')
+    .notEmpty().withMessage('Each rule must have a BMI category')
+    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
+  
+  body('rules.*.bodyFatCategory')
+    .notEmpty().withMessage('Each rule must have a body fat category')
+    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
+  
+  body('rules.*.programId')
+    .notEmpty().withMessage('Each rule must have a program ID')
+    .isInt({ min: 1 }).withMessage('Program ID must be a valid integer')
+];
+
 // Exercise validators (for future use)
 export const exerciseValidator = [
   body('name')
