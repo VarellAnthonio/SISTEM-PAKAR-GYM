@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
 import ProgramEditModal from '../../components/admin/ProgramEditModal';
+import ProgramDetailModal from '../../components/admin/ProgramDetailModal'; // Import modal detail baru
 import { MagnifyingGlassIcon, PencilIcon, EyeIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { programService } from '../../services/program';
 import toast from 'react-hot-toast';
@@ -9,9 +10,13 @@ const AdminPrograms = () => {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false); // State untuk modal detail
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [saveLoading, setSaveLoading] = useState(false);
+  
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -70,8 +75,16 @@ const AdminPrograms = () => {
     setShowEditModal(true);
   };
 
+  // Fungsi untuk handle view detail - DIPERBAIKI
   const handleView = (program) => {
-    toast.info(`Melihat detail program ${program.code} - ${program.name}`);
+    setSelectedProgram(program);
+    setShowDetailModal(true);
+    
+    // Toast untuk feedback
+    toast.success(`Menampilkan detail program ${program.code} - ${program.name}`, {
+      duration: 2000,
+      position: 'top-right'
+    });
   };
 
   const handleSave = async (formData) => {
@@ -84,6 +97,7 @@ const AdminPrograms = () => {
         toast.success('Program berhasil diperbarui');
         await fetchPrograms();
         setShowEditModal(false);
+        setSelectedProgram(null);
       } else {
         throw new Error(result.message || 'Gagal memperbarui program');
       }
@@ -94,6 +108,12 @@ const AdminPrograms = () => {
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const handleCloseModals = () => {
+    setShowEditModal(false);
+    setShowDetailModal(false);
+    setSelectedProgram(null);
   };
 
   const getBMICategoryDisplay = (category) => {
@@ -131,13 +151,6 @@ const AdminPrograms = () => {
     return colors[code] || 'border-gray-200 bg-gray-50';
   };
 
-  const getScheduleDaysCount = (schedule) => {
-    if (!schedule) return 0;
-    return Object.values(schedule).filter(day => 
-      day && day.trim() && !day.toLowerCase().includes('rest') && !day.toLowerCase().includes('cardio')
-    ).length;
-  };
-
   const getCompletionStatus = (program) => {
     const requiredFields = ['name', 'description', 'cardioRatio', 'dietRecommendation', 'schedule'];
     const completedFields = requiredFields.filter(field => {
@@ -159,6 +172,7 @@ const AdminPrograms = () => {
       <AdminSidebarLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="ml-4 text-gray-600">Memuat data program...</p>
         </div>
       </AdminSidebarLayout>
     );
@@ -169,16 +183,16 @@ const AdminPrograms = () => {
       <div className="max-w-7xl">
         {/* Header - NO ADD BUTTON */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Program Management</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Program Management</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Kelola konten 10 program olahraga yang sudah ter-validasi secara medis
           </p>
         </div>
 
         {/* System Status Alert */}
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
           <div className="flex items-start">
-            <CheckCircleIcon className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
+            <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
             <div>
               <h3 className="text-sm font-medium text-green-900">Medical Logic System Optimal</h3>
               <p className="text-sm text-green-800 mt-1">
@@ -188,64 +202,64 @@ const AdminPrograms = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900">Total Program</h3>
-            <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
+        {/* Quick Stats - Responsive Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-medium text-blue-900">Total Program</h3>
+            <p className="text-xl sm:text-2xl font-bold text-blue-800">{stats.total}</p>
             <p className="text-xs text-blue-600">medically validated</p>
           </div>
           
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-green-900">Coverage</h3>
-            <p className="text-2xl font-bold text-green-800">{stats.coverage}</p>
-            <p className="text-xs text-green-600">realistic combinations</p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-medium text-green-900">Coverage</h3>
+            <p className="text-xl sm:text-2xl font-bold text-green-800">{stats.coverage}</p>
+            <p className="text-xs text-green-600">combinations</p>
           </div>
           
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-purple-900">Active Programs</h3>
-            <p className="text-2xl font-bold text-purple-800">{stats.active}</p>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-medium text-purple-900">Active</h3>
+            <p className="text-xl sm:text-2xl font-bold text-purple-800">{stats.active}</p>
             <p className="text-xs text-purple-600">ready for use</p>
           </div>
           
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-orange-900">Completion</h3>
-            <p className="text-2xl font-bold text-orange-800">{stats.completionRate || 100}%</p>
-            <p className="text-xs text-orange-600">content complete</p>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-medium text-orange-900">Complete</h3>
+            <p className="text-xl sm:text-2xl font-bold text-orange-800">{stats.completionRate || 100}%</p>
+            <p className="text-xs text-orange-600">content done</p>
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search - Mobile Friendly */}
         <div className="mb-6">
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
             <span className="text-sm text-gray-600">Cari:</span>
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-initial">
               <input
                 type="text"
                 placeholder="Cari program..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-80 text-sm sm:text-base"
               />
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
+              <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 absolute left-3 top-2.5" />
             </div>
           </div>
         </div>
 
-        {/* Programs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Programs Grid - Responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {filteredPrograms.map((program) => {
             const completion = getCompletionStatus(program);
             
             return (
               <div 
                 key={program.id} 
-                className={`rounded-lg border-2 p-6 hover:shadow-lg transition-all duration-200 ${getProgramCardColor(program.code)}`}
+                className={`rounded-lg border-2 p-4 sm:p-6 hover:shadow-lg transition-all duration-200 ${getProgramCardColor(program.code)}`}
               >
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-2">
-                    <span className="px-3 py-1 text-sm font-bold bg-white rounded-full shadow-sm">
+                    <span className="px-2 sm:px-3 py-1 text-sm font-bold bg-white rounded-full shadow-sm">
                       {program.code}
                     </span>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -260,14 +274,14 @@ const AdminPrograms = () => {
                   <div className="flex space-x-1">
                     <button
                       onClick={() => handleView(program)}
-                      className="text-gray-600 hover:text-gray-800 p-1"
+                      className="text-gray-600 hover:text-gray-800 p-1 hover:bg-white rounded transition-colors"
                       title="Lihat Detail"
                     >
                       <EyeIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleEdit(program)}
-                      className="text-blue-600 hover:text-blue-800 p-1"
+                      className="text-blue-600 hover:text-blue-800 p-1 hover:bg-white rounded transition-colors"
                       title="Edit Program"
                     >
                       <PencilIcon className="h-4 w-4" />
@@ -277,13 +291,15 @@ const AdminPrograms = () => {
 
                 {/* Program Info */}
                 <div className="mb-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">{program.name}</h3>
-                  <p className="text-sm text-gray-600 line-clamp-2">{program.description}</p>
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base line-clamp-2">
+                    {program.name}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{program.description}</p>
                 </div>
 
                 {/* Target Condition */}
                 <div className="mb-4">
-                  <div className="text-sm text-gray-700 mb-2">
+                  <div className="text-xs sm:text-sm text-gray-700 mb-2">
                     <strong>Target Kondisi:</strong>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -300,31 +316,25 @@ const AdminPrograms = () => {
                   </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                  <div>
-                    <div className="text-gray-600">Rasio:</div>
-                    <div className="font-medium text-gray-900 text-xs">
-                      {program.cardioRatio || 'Belum diatur'}
-                    </div>
+                {/* Status Info */}
+                <div className="mb-4">
+                  <div className="text-xs sm:text-sm text-gray-600 mb-1">
+                    Status Program:
                   </div>
-                  <div>
-                    <div className="text-gray-600">Hari Latihan:</div>
-                    <div className="font-medium text-gray-900">
-                      {getScheduleDaysCount(program.schedule)}/7 hari
-                    </div>
+                  <div className="text-xs sm:text-sm font-medium text-gray-900">
+                    {program.isActive !== false ? '✅ Program Aktif' : '❌ Program Nonaktif'}
                   </div>
                 </div>
 
                 {/* Completion Progress */}
                 <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between text-xs sm:text-sm mb-1">
                     <span className="text-gray-600">Kelengkapan:</span>
                     <span className="font-medium">{completion.percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className={`h-2 rounded-full ${
+                      className={`h-2 rounded-full transition-all duration-300 ${
                         completion.percentage === 100 ? 'bg-green-500' : 
                         completion.percentage >= 70 ? 'bg-yellow-500' : 'bg-red-500'
                       }`}
@@ -333,14 +343,21 @@ const AdminPrograms = () => {
                   </div>
                 </div>
 
-                {/* Action Button */}
-                <div className="pt-4 border-t border-gray-200">
+                {/* Action Buttons */}
+                <div className="pt-4 border-t border-gray-200 space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row">
+                  <button
+                    onClick={() => handleView(program)}
+                    className="flex-1 bg-gray-600 text-white text-xs sm:text-sm py-2 px-3 rounded-md hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center"
+                  >
+                    <EyeIcon className="h-4 w-4 mr-2" />
+                    Detail
+                  </button>
                   <button
                     onClick={() => handleEdit(program)}
-                    className="w-full bg-blue-600 text-white text-sm py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+                    className="flex-1 bg-blue-600 text-white text-xs sm:text-sm py-2 px-3 rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
                   >
                     <PencilIcon className="h-4 w-4 mr-2" />
-                    Edit Program
+                    Edit
                   </button>
                 </div>
               </div>
@@ -357,9 +374,9 @@ const AdminPrograms = () => {
         )}
 
         {/* Info Box */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
           <div className="flex items-start">
-            <InformationCircleIcon className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
+            <InformationCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
             <div>
               <h3 className="text-sm font-medium text-blue-900 mb-2">Program Management - Edit Only System</h3>
               <div className="text-sm text-blue-800 space-y-1">
@@ -372,10 +389,16 @@ const AdminPrograms = () => {
           </div>
         </div>
 
-        {/* Edit Modal */}
+        {/* Modals */}
+        <ProgramDetailModal
+          isOpen={showDetailModal}
+          onClose={handleCloseModals}
+          program={selectedProgram}
+        />
+
         <ProgramEditModal
           isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
+          onClose={handleCloseModals}
           program={selectedProgram}
           onSave={handleSave}
           loading={saveLoading}
