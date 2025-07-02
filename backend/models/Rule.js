@@ -41,17 +41,7 @@ const Rule = sequelize.define('Rule', {
   programId: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'program_id'  // Map to snake_case column name
-  },
-  priority: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1,
-    validate: {
-      min: {
-        args: [1],
-        msg: 'Priority must be at least 1'
-      }
-    }
+    field: 'program_id'
   },
   conditions: {
     type: DataTypes.JSON,
@@ -69,6 +59,7 @@ const Rule = sequelize.define('Rule', {
     {
       unique: true,
       fields: ['bmi_category', 'body_fat_category'],
+      name: 'unique_bmi_bodyfat_combination',
       where: {
         is_active: true
       }
@@ -77,10 +68,13 @@ const Rule = sequelize.define('Rule', {
       fields: ['program_id']
     },
     {
-      fields: ['priority']
+      fields: ['is_active']
     },
     {
-      fields: ['is_active']
+      fields: ['bmi_category']
+    },
+    {
+      fields: ['body_fat_category']
     }
   ]
 });

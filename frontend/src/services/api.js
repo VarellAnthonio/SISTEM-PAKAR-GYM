@@ -59,18 +59,22 @@ export const apiService = {
     delete: (id) => api.delete(`/programs/${id}`)
   },
 
-  // Rules - NEW ENDPOINTS
+  // Rules - SIMPLIFIED ENDPOINTS (assignment only)
   rules: {
     getAll: (params = {}) => api.get('/rules', { params }),
     getById: (id) => api.get(`/rules/${id}`),
     getStats: () => api.get('/rules/stats'),
     getMissingCombinations: () => api.get('/rules/missing-combinations'),
-    testForwardChaining: (data) => api.post('/rules/test-forward-chaining', data),
-    create: (data) => api.post('/rules', data),
+    
+    // ONLY UPDATE allowed (program assignment only)
     update: (id, data) => api.put(`/rules/${id}`, data),
-    delete: (id) => api.delete(`/rules/${id}`),
-    toggleStatus: (id) => api.patch(`/rules/${id}/toggle`),
-    bulkCreate: (data) => api.post('/rules/bulk', data)
+    
+    // REMOVED ENDPOINTS (no longer supported):
+    // ❌ create: (data) => api.post('/rules', data)
+    // ❌ delete: (id) => api.delete(`/rules/${id}`)
+    // ❌ toggleStatus: (id) => api.patch(`/rules/${id}/toggle`)
+    // ❌ testForwardChaining: (data) => api.post('/rules/test-forward-chaining', data)
+    // ❌ bulkCreate: (data) => api.post('/rules/bulk', data)
   },
 
   // Consultations
@@ -88,7 +92,7 @@ export const apiService = {
     }
   },
 
-  // Exercises (when we implement)
+  // Exercises
   exercises: {
     getAll: (params = {}) => api.get('/exercises', { params }),
     getByCategory: (category) => api.get(`/exercises/category/${category}`),

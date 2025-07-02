@@ -35,26 +35,6 @@ export const ruleService = {
     }
   },
 
-  // Search rules by condition
-  searchByCondition: async (bmiCategory, bodyFatCategory) => {
-    try {
-      const response = await apiService.rules.getAll({
-        bmiCategory,
-        bodyFatCategory
-      });
-      return {
-        success: true,
-        data: response.data.data
-      };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to search rules';
-      return {
-        success: false,
-        message
-      };
-    }
-  },
-
   // Get rule statistics
   getStats: async () => {
     try {
@@ -89,29 +69,9 @@ export const ruleService = {
     }
   },
 
-  // Admin methods
+  // Admin methods - SIMPLIFIED (assignment only)
   admin: {
-    // Create new rule
-    create: async (ruleData) => {
-      try {
-        const response = await apiService.rules.create(ruleData);
-        return {
-          success: true,
-          data: response.data.data,
-          message: response.data.message
-        };
-      } catch (error) {
-        const message = error.response?.data?.message || 'Failed to create rule';
-        const errors = error.response?.data?.errors || [];
-        return {
-          success: false,
-          message,
-          errors
-        };
-      }
-    },
-
-    // Update rule
+    // Update rule - PROGRAM ASSIGNMENT ONLY
     update: async (id, updateData) => {
       try {
         const response = await apiService.rules.update(id, updateData);
@@ -131,51 +91,16 @@ export const ruleService = {
       }
     },
 
-    // Delete rule
-    delete: async (id) => {
+    // Get rule statistics (admin view)
+    getStats: async () => {
       try {
-        const response = await apiService.rules.delete(id);
-        return {
-          success: true,
-          message: response.data.message
-        };
-      } catch (error) {
-        const message = error.response?.data?.message || 'Failed to delete rule';
-        return {
-          success: false,
-          message
-        };
-      }
-    },
-
-    // Toggle rule status
-    toggleStatus: async (id) => {
-      try {
-        const response = await apiService.rules.toggleStatus(id);
-        return {
-          success: true,
-          data: response.data.data,
-          message: response.data.message
-        };
-      } catch (error) {
-        const message = error.response?.data?.message || 'Failed to toggle rule status';
-        return {
-          success: false,
-          message
-        };
-      }
-    },
-
-    // Test forward chaining
-    testForwardChaining: async (testData) => {
-      try {
-        const response = await apiService.rules.testForwardChaining(testData);
+        const response = await apiService.rules.getStats();
         return {
           success: true,
           data: response.data.data
         };
       } catch (error) {
-        const message = error.response?.data?.message || 'Forward chaining test failed';
+        const message = error.response?.data?.message || 'Failed to get rule statistics';
         return {
           success: false,
           message
@@ -183,17 +108,16 @@ export const ruleService = {
       }
     },
 
-    // Bulk create rules
-    bulkCreate: async (rulesData) => {
+    // Get missing combinations (admin view)
+    getMissingCombinations: async () => {
       try {
-        const response = await apiService.rules.bulkCreate({ rules: rulesData });
+        const response = await apiService.rules.getMissingCombinations();
         return {
           success: true,
-          data: response.data.data,
-          message: response.data.message
+          data: response.data.data
         };
       } catch (error) {
-        const message = error.response?.data?.message || 'Failed to create rules';
+        const message = error.response?.data?.message || 'Failed to get missing combinations';
         return {
           success: false,
           message
@@ -201,17 +125,14 @@ export const ruleService = {
       }
     },
 
-    // Validate rule configuration
-    validate: async (ruleData) => {
+    // Validate rule assignment (client-side)
+    validateAssignment: async (ruleData) => {
       try {
-        // For now, just do client-side validation
-        // In real implementation, this could call a validation endpoint
         const errors = [];
         
-        if (!ruleData.name) errors.push('Rule name is required');
-        if (!ruleData.bmiCategory) errors.push('BMI category is required');
-        if (!ruleData.bodyFatCategory) errors.push('Body fat category is required');
-        if (!ruleData.programId) errors.push('Program is required');
+        if (!ruleData.programId) {
+          errors.push('Program assignment is required');
+        }
 
         if (errors.length > 0) {
           return {
@@ -234,133 +155,80 @@ export const ruleService = {
     }
   },
 
-  // Forward chaining utilities
-  forwardChaining: {
-    // Test specific conditions
-    test: async (conditions) => {
-      try {
-        const response = await apiService.rules.testForwardChaining(conditions);
-        return {
-          success: true,
-          data: response.data.data
-        };
-      } catch (error) {
-        const message = error.response?.data?.message || 'Forward chaining test failed';
-        return {
-          success: false,
-          message
-        };
-      }
+  // Utility methods for UI
+  utils: {
+    // Get BMI category display name
+    getBMIDisplay: (category) => {
+      const mapping = {
+        'B1': 'Underweight',
+        'B2': 'Ideal',
+        'B3': 'Overweight',
+        'B4': 'Obese'
+      };
+      return mapping[category] || category;
     },
 
-    // Get rule chain for conditions (client-side calculation)
-    getChain: async (bmi, bodyFat, gender) => {
-      try {
-        // Determine BMI category
-        let bmiCategory;
-        if (bmi < 18.5) bmiCategory = 'B1'; // Underweight
-        else if (bmi >= 18.5 && bmi <= 24.9) bmiCategory = 'B2'; // Ideal
-        else if (bmi >= 25 && bmi <= 29.9) bmiCategory = 'B3'; // Overweight
-        else bmiCategory = 'B4'; // Obese
-
-        // Determine Body Fat category based on gender
-        let bodyFatCategory;
-        if (gender === 'male') {
-          if (bodyFat < 10) bodyFatCategory = 'L1'; // Rendah
-          else if (bodyFat >= 10 && bodyFat <= 20) bodyFatCategory = 'L2'; // Normal
-          else bodyFatCategory = 'L3'; // Tinggi
-        } else {
-          if (bodyFat < 20) bodyFatCategory = 'L1'; // Rendah
-          else if (bodyFat >= 20 && bodyFat <= 30) bodyFatCategory = 'L2'; // Normal
-          else bodyFatCategory = 'L3'; // Tinggi
-        }
-
-        // Get matching rule
-        const rulesResult = await this.parent.searchByCondition(bmiCategory, bodyFatCategory);
-        
-        if (rulesResult.success && rulesResult.data.length > 0) {
-          const rule = rulesResult.data[0];
-          return {
-            success: true,
-            data: {
-              bmiCategory,
-              bodyFatCategory,
-              rule,
-              isDefault: false
-            }
-          };
-        }
-
-        // Fallback to default program (P2)
-        return {
-          success: true,
-          data: {
-            bmiCategory,
-            bodyFatCategory,
-            rule: null,
-            isDefault: true,
-            defaultProgram: 'P2'
-          }
-        };
-
-      } catch (error) {
-        return {
-          success: false,
-          message: 'Failed to get rule chain'
-        };
-      }
+    // Get body fat category display name
+    getBodyFatDisplay: (category) => {
+      const mapping = {
+        'L1': 'Rendah',
+        'L2': 'Normal', 
+        'L3': 'Tinggi'
+      };
+      return mapping[category] || category;
     },
 
-    // Validate forward chaining logic (client-side)
-    validate: async () => {
-      try {
-        const rulesResult = await this.parent.getAll({ active: true });
-        
-        if (!rulesResult.success) {
-          return {
-            success: false,
-            message: 'Failed to validate: Cannot fetch rules'
-          };
-        }
+    // Get condition display (BMI + Body Fat)
+    getConditionDisplay: (rule) => {
+      const bmi = this.getBMIDisplay(rule.bmiCategory);
+      const bodyFat = this.getBodyFatDisplay(rule.bodyFatCategory);
+      return `${bmi} + ${bodyFat}`;
+    },
 
-        const rules = rulesResult.data;
-        const combinations = [];
-        const duplicates = [];
-
-        // Check for duplicate combinations
-        rules.forEach(rule => {
-          const combo = `${rule.bmiCategory}-${rule.bodyFatCategory}`;
-          if (combinations.includes(combo)) {
-            duplicates.push(combo);
-          } else {
-            combinations.push(combo);
-          }
-        });
-
-        // Calculate coverage
-        const maxCombinations = 12; // 4 BMI × 3 BodyFat
-        const coverage = Math.round((combinations.length / maxCombinations) * 100);
-
-        return {
-          success: true,
-          data: {
-            totalRules: rules.length,
-            uniqueCombinations: combinations.length,
-            duplicates,
-            coverage: `${coverage}%`,
-            isValid: duplicates.length === 0
-          }
-        };
-
-      } catch (error) {
-        return {
-          success: false,
-          message: 'Forward chaining validation failed'
-        };
+    // Get program display
+    getProgramDisplay: (rule, programs) => {
+      if (rule.program) {
+        return `${rule.program.code} - ${rule.program.name}`;
       }
+      
+      const program = programs.find(p => p.id === rule.programId);
+      return program ? `${program.code} - ${program.name}` : 'Program tidak ditemukan';
+    },
+
+    // Check if combination is realistic
+    isRealisticCombination: (bmiCategory, bodyFatCategory) => {
+      const realisticCombinations = [
+        'B1-L1', 'B1-L2', 'B1-L3',
+        'B2-L1', 'B2-L2', 'B2-L3', 
+        'B3-L1', 'B3-L2', 'B3-L3',
+        'B4-L3'
+      ];
+      const combo = `${bmiCategory}-${bodyFatCategory}`;
+      return realisticCombinations.includes(combo);
+    },
+
+    // Get realistic combinations list
+    getRealisticCombinations: () => {
+      return [
+        { bmi: 'B1', bodyFat: 'L1', desc: 'Underweight + Low Body Fat' },
+        { bmi: 'B1', bodyFat: 'L2', desc: 'Underweight + Normal Body Fat' },
+        { bmi: 'B1', bodyFat: 'L3', desc: 'Underweight + High Body Fat' },
+        { bmi: 'B2', bodyFat: 'L1', desc: 'Ideal + Low Body Fat' },
+        { bmi: 'B2', bodyFat: 'L2', desc: 'Ideal + Normal Body Fat' },
+        { bmi: 'B2', bodyFat: 'L3', desc: 'Ideal + High Body Fat' },
+        { bmi: 'B3', bodyFat: 'L1', desc: 'Overweight + Low Body Fat' },
+        { bmi: 'B3', bodyFat: 'L2', desc: 'Overweight + Normal Body Fat' },
+        { bmi: 'B3', bodyFat: 'L3', desc: 'Overweight + High Body Fat' },
+        { bmi: 'B4', bodyFat: 'L3', desc: 'Obese + High Body Fat' }
+      ];
     }
   }
 };
 
-// Add parent reference for internal method calls
-ruleService.forwardChaining.parent = ruleService;
+// REMOVED METHODS (no longer supported):
+// ❌ admin.create() - Rules cannot be created
+// ❌ admin.delete() - Rules cannot be deleted  
+// ❌ admin.toggleStatus() - Rules cannot be toggled
+// ❌ admin.testForwardChaining() - Testing moved to backend
+// ❌ admin.bulkCreate() - Bulk operations removed
+// ❌ forwardChaining.test() - Client-side FC removed

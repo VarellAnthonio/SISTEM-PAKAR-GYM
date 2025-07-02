@@ -1,6 +1,8 @@
 import { Rule, Program } from '../models/index.js';
 import { Op } from 'sequelize';
 import sequelize from '../config/database.js';
+import { MedicalLogic } from '../utils/medicalLogic.js';
+import { RULE_CONSTANTS } from '../config/ruleConstants.js';
 
 // @desc    Get all rules
 // @route   GET /api/rules
@@ -41,7 +43,7 @@ export const getRules = async (req, res) => {
           attributes: ['id', 'code', 'name', 'isActive']
         }
       ],
-      order: [['priority', 'ASC'], ['bmiCategory', 'ASC'], ['bodyFatCategory', 'ASC']]
+      order: [['bmiCategory', 'ASC'], ['bodyFatCategory', 'ASC']]
     });
 
     res.json({
@@ -96,35 +98,26 @@ export const getRuleById = async (req, res) => {
   }
 };
 
-// @desc    Create new rule (Admin only)
-// @route   POST /api/rules
+// @desc    Update rule - PROGRAM ASSIGNMENT ONLY
+// @route   PUT /api/rules/:id
 // @access  Private (Admin)
-export const createRule = async (req, res) => {
+export const updateRule = async (req, res) => {
   try {
-    const {
-      name,
-      description,
-      bmiCategory,
-      bodyFatCategory,
-      programId,
-      priority,
-      conditions,
-      isActive
-    } = req.body;
+    const { id } = req.params;
+    const { programId } = req.body;
 
-    // Check if combination already exists
-    const existingRule = await Rule.findOne({
-      where: { 
-        bmiCategory, 
-        bodyFatCategory,
-        isActive: true 
-      }
-    });
-
-    if (existingRule) {
+    if (!programId) {
       return res.status(400).json({
         success: false,
-        message: 'Rule with this BMI and Body Fat combination already exists'
+        message: 'Program ID is required'
+      });
+    }
+
+    const rule = await Rule.findByPk(id);
+    if (!rule) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rule not found'
       });
     }
 
@@ -137,108 +130,10 @@ export const createRule = async (req, res) => {
       });
     }
 
-    const rule = await Rule.create({
-      name,
-      description,
-      bmiCategory,
-      bodyFatCategory,
-      programId,
-      priority: priority || 1,
-      conditions: conditions || {},
-      isActive: isActive !== undefined ? isActive : true
+    // Only allow program assignment updates
+    await rule.update({ 
+      programId: parseInt(programId)
     });
-
-    // Fetch created rule with program details
-    const createdRule = await Rule.findByPk(rule.id, {
-      include: [
-        {
-          model: Program,
-          as: 'program',
-          attributes: ['id', 'code', 'name', 'isActive']
-        }
-      ]
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Rule created successfully',
-      data: createdRule
-    });
-
-  } catch (error) {
-    console.error('Create rule error:', error);
-    
-    // Handle Sequelize validation errors
-    if (error.name === 'SequelizeValidationError') {
-      const validationErrors = error.errors.map(err => ({
-        field: err.path,
-        message: err.message
-      }));
-      
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: validationErrors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create rule'
-    });
-  }
-};
-
-// @desc    Update rule (Admin only)
-// @route   PUT /api/rules/:id
-// @access  Private (Admin)
-export const updateRule = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updateData = req.body;
-
-    const rule = await Rule.findByPk(id);
-    if (!rule) {
-      return res.status(404).json({
-        success: false,
-        message: 'Rule not found'
-      });
-    }
-
-    // If updating BMI/Body Fat categories, check combination uniqueness
-    if (updateData.bmiCategory || updateData.bodyFatCategory) {
-      const bmiCategory = updateData.bmiCategory || rule.bmiCategory;
-      const bodyFatCategory = updateData.bodyFatCategory || rule.bodyFatCategory;
-      
-      const existingRule = await Rule.findOne({
-        where: { 
-          bmiCategory, 
-          bodyFatCategory,
-          isActive: true,
-          id: { [Op.ne]: id }
-        }
-      });
-
-      if (existingRule) {
-        return res.status(400).json({
-          success: false,
-          message: 'Rule with this BMI and Body Fat combination already exists'
-        });
-      }
-    }
-
-    // Verify program exists if updating programId
-    if (updateData.programId) {
-      const program = await Program.findByPk(updateData.programId);
-      if (!program) {
-        return res.status(400).json({
-          success: false,
-          message: 'Program not found'
-        });
-      }
-    }
-
-    await rule.update(updateData);
 
     // Fetch updated rule with program details
     const updatedRule = await Rule.findByPk(id, {
@@ -253,126 +148,15 @@ export const updateRule = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Rule updated successfully',
+      message: 'Program assignment updated successfully',
       data: updatedRule
     });
 
   } catch (error) {
     console.error('Update rule error:', error);
-    
-    // Handle Sequelize validation errors
-    if (error.name === 'SequelizeValidationError') {
-      const validationErrors = error.errors.map(err => ({
-        field: err.path,
-        message: err.message
-      }));
-      
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: validationErrors
-      });
-    }
-
     res.status(500).json({
       success: false,
       message: 'Failed to update rule'
-    });
-  }
-};
-
-// @desc    Delete rule (Admin only)
-// @route   DELETE /api/rules/:id
-// @access  Private (Admin)
-export const deleteRule = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const rule = await Rule.findByPk(id);
-    if (!rule) {
-      return res.status(404).json({
-        success: false,
-        message: 'Rule not found'
-      });
-    }
-
-    // Soft delete - set isActive to false instead of actual deletion
-    await rule.update({ isActive: false });
-
-    res.json({
-      success: true,
-      message: 'Rule deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Delete rule error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete rule'
-    });
-  }
-};
-
-// @desc    Toggle rule status (Admin only)
-// @route   PATCH /api/rules/:id/toggle
-// @access  Private (Admin)
-export const toggleRuleStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const rule = await Rule.findByPk(id);
-    if (!rule) {
-      return res.status(404).json({
-        success: false,
-        message: 'Rule not found'
-      });
-    }
-
-    const newStatus = !rule.isActive;
-
-    // If activating, check for conflicts
-    if (newStatus) {
-      const existingRule = await Rule.findOne({
-        where: { 
-          bmiCategory: rule.bmiCategory, 
-          bodyFatCategory: rule.bodyFatCategory,
-          isActive: true,
-          id: { [Op.ne]: id }
-        }
-      });
-
-      if (existingRule) {
-        return res.status(400).json({
-          success: false,
-          message: 'Cannot activate: Another rule with this combination is already active'
-        });
-      }
-    }
-
-    await rule.update({ isActive: newStatus });
-
-    // Fetch updated rule with program details
-    const updatedRule = await Rule.findByPk(id, {
-      include: [
-        {
-          model: Program,
-          as: 'program',
-          attributes: ['id', 'code', 'name', 'isActive']
-        }
-      ]
-    });
-
-    res.json({
-      success: true,
-      message: `Rule ${newStatus ? 'activated' : 'deactivated'} successfully`,
-      data: updatedRule
-    });
-
-  } catch (error) {
-    console.error('Toggle rule status error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to toggle rule status'
     });
   }
 };
@@ -405,9 +189,9 @@ export const getRuleStats = async (req, res) => {
       group: ['bodyFatCategory']
     });
 
-    // Calculate coverage (max 12 combinations: 4 BMI × 3 BodyFat)
-    const maxCombinations = 12;
-    const coverage = Math.round((activeRules / maxCombinations) * 100);
+    // Calculate coverage (max 10 realistic combinations)
+    const maxRealisticCombinations = 10;
+    const coverage = Math.round((activeRules / maxRealisticCombinations) * 100);
 
     res.json({
       success: true,
@@ -416,7 +200,7 @@ export const getRuleStats = async (req, res) => {
         active: activeRules,
         inactive: totalRules - activeRules,
         coverage: `${coverage}%`,
-        maxCombinations,
+        maxCombinations: maxRealisticCombinations,
         bmiDistribution: bmiStats.map(stat => ({
           category: stat.bmiCategory,
           count: parseInt(stat.get('count'))
@@ -452,19 +236,14 @@ export const getMissingCombinations = async (req, res) => {
       `${rule.bmiCategory}-${rule.bodyFatCategory}`
     );
 
-    // Generate all possible combinations
-    const bmiCategories = ['B1', 'B2', 'B3', 'B4'];
-    const bodyFatCategories = ['L1', 'L2', 'L3'];
-    const allCombinations = [];
+    // Get realistic combinations from medical logic
+    const realisticCombinations = MedicalLogic.getRealisticCombinations();
+    const realisticComboKeys = realisticCombinations.map(combo => 
+      `${combo.bmi}-${combo.bodyFat}`
+    );
 
-    bmiCategories.forEach(bmi => {
-      bodyFatCategories.forEach(bodyFat => {
-        allCombinations.push(`${bmi}-${bodyFat}`);
-      });
-    });
-
-    // Find missing combinations
-    const missingCombinations = allCombinations.filter(combo => 
+    // Find missing realistic combinations
+    const missingCombinations = realisticComboKeys.filter(combo => 
       !existingCombinations.includes(combo)
     );
 
@@ -474,18 +253,19 @@ export const getMissingCombinations = async (req, res) => {
         combination: combo,
         bmiCategory: bmi,
         bodyFatCategory: bodyFat,
-        bmiDisplay: getBMICategoryDisplay(bmi),
-        bodyFatDisplay: getBodyFatCategoryDisplay(bodyFat)
+        bmiDisplay: RULE_CONSTANTS.getDisplayName(bmi, 'bmi'),
+        bodyFatDisplay: RULE_CONSTANTS.getDisplayName(bodyFat, 'bodyFat')
       };
     });
 
     res.json({
       success: true,
       data: {
-        total: allCombinations.length,
+        totalRealistic: realisticCombinations.length,
         existing: existingCombinations.length,
         missing: missingCombinations.length,
-        missingCombinations: missingDetails
+        missingCombinations: missingDetails,
+        impossibleCombinations: ['B4-L1', 'B4-L2'] // Excluded by design
       }
     });
 
@@ -498,95 +278,11 @@ export const getMissingCombinations = async (req, res) => {
   }
 };
 
-// @desc    Test forward chaining
-// @route   POST /api/rules/test-forward-chaining
-// @access  Private (Admin)
-export const testForwardChaining = async (req, res) => {
-  try {
-    const { weight, height, bodyFatPercentage, gender } = req.body;
-
-    if (!weight || !height || !bodyFatPercentage || !gender) {
-      return res.status(400).json({
-        success: false,
-        message: 'All parameters (weight, height, bodyFatPercentage, gender) are required'
-      });
-    }
-
-    // Calculate BMI
-    const bmi = weight / Math.pow(height / 100, 2);
-
-    // Run forward chaining
-    const chainResult = await Rule.forwardChaining(bmi, bodyFatPercentage, gender);
-
-    res.json({
-      success: true,
-      data: {
-        input: { weight, height, bodyFatPercentage, gender },
-        calculated: { bmi: parseFloat(bmi.toFixed(2)) },
-        result: chainResult
-      }
-    });
-
-  } catch (error) {
-    console.error('Test forward chaining error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Forward chaining test failed',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-// @desc    Bulk create rules
-// @route   POST /api/rules/bulk
-// @access  Private (Admin)
-export const bulkCreateRules = async (req, res) => {
-  try {
-    const { rules } = req.body;
-
-    if (!Array.isArray(rules) || rules.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Rules array is required and must not be empty'
-      });
-    }
-
-    const createdRules = await Rule.bulkCreate(rules, {
-      validate: true,
-      individualHooks: true
-    });
-
-    res.status(201).json({
-      success: true,
-      message: `${createdRules.length} rules created successfully`,
-      data: createdRules
-    });
-
-  } catch (error) {
-    console.error('Bulk create rules error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create rules'
-    });
-  }
-};
-
 // Helper functions
 const getBMICategoryDisplay = (category) => {
-  const mapping = {
-    'B1': 'Underweight',
-    'B2': 'Ideal',
-    'B3': 'Overweight',
-    'B4': 'Obese'
-  };
-  return mapping[category] || category;
+  return RULE_CONSTANTS.getDisplayName(category, 'bmi');
 };
 
 const getBodyFatCategoryDisplay = (category) => {
-  const mapping = {
-    'L1': 'Rendah',
-    'L2': 'Normal',
-    'L3': 'Tinggi'
-  };
-  return mapping[category] || category;
+  return RULE_CONSTANTS.getDisplayName(category, 'bodyFat');
 };
