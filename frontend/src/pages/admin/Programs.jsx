@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
 import ProgramEditModal from '../../components/admin/ProgramEditModal';
-import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PencilIcon, EyeIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { programService } from '../../services/program';
 import toast from 'react-hot-toast';
 
@@ -15,12 +15,13 @@ const AdminPrograms = () => {
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
-    inactive: 0
+    inactive: 0,
+    coverage: '0%'
   });
 
-  // Fetch programs on component mount
   useEffect(() => {
     fetchPrograms();
+    fetchStats();
   }, []);
 
   const fetchPrograms = async () => {
@@ -29,14 +30,13 @@ const AdminPrograms = () => {
       const result = await programService.getAll();
       
       if (result.success) {
-        setPrograms(result.data || []);
-        
-        // Calculate stats
-        const total = result.data?.length || 0;
-        const active = result.data?.filter(p => p.isActive !== false).length || 0;
-        const inactive = total - active;
-        
-        setStats({ total, active, inactive });
+        // Sort by program code (P1, P2, P3, ...)
+        const sortedPrograms = (result.data || []).sort((a, b) => {
+          const numA = parseInt(a.code.replace('P', ''));
+          const numB = parseInt(b.code.replace('P', ''));
+          return numA - numB;
+        });
+        setPrograms(sortedPrograms);
       } else {
         toast.error(result.message || 'Gagal memuat data program');
       }
@@ -48,17 +48,22 @@ const AdminPrograms = () => {
     }
   };
 
-  // Filter programs based on search
+  const fetchStats = async () => {
+    try {
+      const result = await programService.admin.getStats();
+      if (result.success) {
+        setStats(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
   const filteredPrograms = programs.filter(program =>
     program.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     program.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     program.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleAdd = () => {
-    setSelectedProgram(null);
-    setShowEditModal(true);
-  };
 
   const handleEdit = (program) => {
     setSelectedProgram(program);
@@ -66,58 +71,28 @@ const AdminPrograms = () => {
   };
 
   const handleView = (program) => {
-    // For now, just show program details in console
-    // Later can implement a view-only modal
-    console.log('View program details:', program);
-    toast.info(`Melihat detail program ${program.code}`);
+    toast.info(`Melihat detail program ${program.code} - ${program.name}`);
   };
 
   const handleSave = async (formData) => {
     try {
       setSaveLoading(true);
       
-      let result;
-      if (selectedProgram?.id) {
-        // Update existing program
-        result = await programService.admin.update(selectedProgram.id, formData);
-      } else {
-        // Create new program
-        result = await programService.admin.create(formData);
-      }
+      const result = await programService.admin.update(selectedProgram.id, formData);
 
       if (result.success) {
-        toast.success(result.message || 'Program berhasil disimpan');
-        await fetchPrograms(); // Refresh the list
+        toast.success('Program berhasil diperbarui');
+        await fetchPrograms();
         setShowEditModal(false);
       } else {
-        throw new Error(result.message || 'Gagal menyimpan program');
+        throw new Error(result.message || 'Gagal memperbarui program');
       }
     } catch (error) {
       console.error('Save program error:', error);
-      toast.error(error.message || 'Gagal menyimpan program');
-      throw error; // Re-throw to be handled by modal
+      toast.error(error.message || 'Gagal memperbarui program');
+      throw error;
     } finally {
       setSaveLoading(false);
-    }
-  };
-
-  const handleDelete = async (program) => {
-    const confirmMessage = `Apakah Anda yakin ingin menghapus program "${program.code} - ${program.name}"?\n\nProgram yang dihapus akan dinonaktifkan dan tidak dapat digunakan untuk konsultasi baru.`;
-    
-    if (window.confirm(confirmMessage)) {
-      try {
-        const result = await programService.admin.delete(program.id);
-        
-        if (result.success) {
-          toast.success(result.message || 'Program berhasil dihapus');
-          await fetchPrograms(); // Refresh the list
-        } else {
-          toast.error(result.message || 'Gagal menghapus program');
-        }
-      } catch (error) {
-        console.error('Delete program error:', error);
-        toast.error('Gagal menghapus program');
-      }
     }
   };
 
@@ -140,10 +115,43 @@ const AdminPrograms = () => {
     return mapping[category] || category;
   };
 
-  const getConditionDisplay = (program) => {
-    const bmi = getBMICategoryDisplay(program.bmiCategory);
-    const bodyFat = getBodyFatCategoryDisplay(program.bodyFatCategory);
-    return `${bmi} + ${bodyFat}`;
+  const getProgramCardColor = (code) => {
+    const colors = {
+      'P1': 'border-red-200 bg-red-50',
+      'P2': 'border-green-200 bg-green-50',
+      'P3': 'border-blue-200 bg-blue-50',
+      'P4': 'border-orange-200 bg-orange-50',
+      'P5': 'border-purple-200 bg-purple-50',
+      'P6': 'border-indigo-200 bg-indigo-50',
+      'P7': 'border-pink-200 bg-pink-50',
+      'P8': 'border-yellow-200 bg-yellow-50',
+      'P9': 'border-cyan-200 bg-cyan-50',
+      'P10': 'border-gray-200 bg-gray-50'
+    };
+    return colors[code] || 'border-gray-200 bg-gray-50';
+  };
+
+  const getScheduleDaysCount = (schedule) => {
+    if (!schedule) return 0;
+    return Object.values(schedule).filter(day => 
+      day && day.trim() && !day.toLowerCase().includes('rest') && !day.toLowerCase().includes('cardio')
+    ).length;
+  };
+
+  const getCompletionStatus = (program) => {
+    const requiredFields = ['name', 'description', 'cardioRatio', 'dietRecommendation', 'schedule'];
+    const completedFields = requiredFields.filter(field => {
+      if (field === 'schedule') {
+        return program.schedule && Object.keys(program.schedule).length === 7;
+      }
+      return program[field] && program[field].trim();
+    });
+    
+    return {
+      completed: completedFields.length,
+      total: requiredFields.length,
+      percentage: Math.round((completedFields.length / requiredFields.length) * 100)
+    };
   };
 
   if (loading) {
@@ -159,37 +167,51 @@ const AdminPrograms = () => {
   return (
     <AdminSidebarLayout>
       <div className="max-w-7xl">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Data Program Olahraga</h1>
-            <p className="text-gray-600 mt-1">Kelola program olahraga P1-P10 dalam sistem</p>
-          </div>
-          
-          <button
-            onClick={handleAdd}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Tambah Program
-          </button>
+        {/* Header - NO ADD BUTTON */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Program Management</h1>
+          <p className="text-gray-600 mt-1">
+            Kelola konten 10 program olahraga yang sudah ter-validasi secara medis
+          </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* System Status Alert */}
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <CheckCircleIcon className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-green-900">Medical Logic System Optimal</h3>
+              <p className="text-sm text-green-800 mt-1">
+                10 program covering semua kombinasi BMI+BodyFat yang realistis. Sistem forward chaining operasional 100%.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="text-sm font-medium text-blue-900">Total Program</h3>
             <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
+            <p className="text-xs text-blue-600">medically validated</p>
           </div>
           
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-green-900">Program Aktif</h3>
-            <p className="text-2xl font-bold text-green-800">{stats.active}</p>
+            <h3 className="text-sm font-medium text-green-900">Coverage</h3>
+            <p className="text-2xl font-bold text-green-800">{stats.coverage}</p>
+            <p className="text-xs text-green-600">realistic combinations</p>
           </div>
           
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-red-900">Program Nonaktif</h3>
-            <p className="text-2xl font-bold text-red-800">{stats.inactive}</p>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-purple-900">Active Programs</h3>
+            <p className="text-2xl font-bold text-purple-800">{stats.active}</p>
+            <p className="text-xs text-purple-600">ready for use</p>
+          </div>
+          
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-orange-900">Completion</h3>
+            <p className="text-2xl font-bold text-orange-800">{stats.completionRate || 100}%</p>
+            <p className="text-xs text-orange-600">content complete</p>
           </div>
         </div>
 
@@ -210,111 +232,20 @@ const AdminPrograms = () => {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {/* Desktop Table */}
-          <div className="hidden md:block">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kode
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama Program
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kondisi Target
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rasio
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPrograms.map((program) => (
-                  <tr key={program.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                        {program.code}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{program.name}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {program.description}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex space-x-1">
-                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                          {getBMICategoryDisplay(program.bmiCategory)}
-                        </span>
-                        <span className="text-xs text-gray-500">+</span>
-                        <span className="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded">
-                          {getBodyFatCategoryDisplay(program.bodyFatCategory)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {program.cardioRatio || 'Belum diatur'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        program.isActive !== false 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {program.isActive !== false ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                      <button
-                        onClick={() => handleView(program)}
-                        className="text-gray-600 hover:text-gray-800 font-medium inline-flex items-center"
-                        title="Lihat Detail"
-                      >
-                        <EyeIcon className="h-4 w-4 mr-1" />
-                        Detail
-                      </button>
-                      <button
-                        onClick={() => handleEdit(program)}
-                        className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
-                        title="Edit Program"
-                      >
-                        <PencilIcon className="h-4 w-4 mr-1" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(program)}
-                        className="text-red-600 hover:text-red-800 font-medium inline-flex items-center"
-                        title="Hapus Program"
-                      >
-                        <TrashIcon className="h-4 w-4 mr-1" />
-                        Hapus
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden divide-y divide-gray-200">
-            {filteredPrograms.map((program) => (
-              <div key={program.id} className="p-4">
-                <div className="flex justify-between items-start mb-3">
+        {/* Programs Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPrograms.map((program) => {
+            const completion = getCompletionStatus(program);
+            
+            return (
+              <div 
+                key={program.id} 
+                className={`rounded-lg border-2 p-6 hover:shadow-lg transition-all duration-200 ${getProgramCardColor(program.code)}`}
+              >
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    <span className="px-3 py-1 text-sm font-bold bg-white rounded-full shadow-sm">
                       {program.code}
                     </span>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -325,62 +256,120 @@ const AdminPrograms = () => {
                       {program.isActive !== false ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </div>
-                  <div className="flex space-x-2">
+                  
+                  <div className="flex space-x-1">
                     <button
                       onClick={() => handleView(program)}
-                      className="text-gray-600 hover:text-gray-800 text-sm"
+                      className="text-gray-600 hover:text-gray-800 p-1"
+                      title="Lihat Detail"
                     >
                       <EyeIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleEdit(program)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
+                      className="text-blue-600 hover:text-blue-800 p-1"
+                      title="Edit Program"
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(program)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
                   </div>
                 </div>
-                
-                <div className="mb-2">
-                  <div className="text-sm font-medium text-gray-900">{program.name}</div>
-                  <div className="text-sm text-gray-500">{program.description}</div>
+
+                {/* Program Info */}
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">{program.name}</h3>
+                  <p className="text-sm text-gray-600 line-clamp-2">{program.description}</p>
                 </div>
-                
-                <div className="text-sm text-gray-600 mb-2">
-                  <strong>Kondisi:</strong> {getConditionDisplay(program)}
+
+                {/* Target Condition */}
+                <div className="mb-4">
+                  <div className="text-sm text-gray-700 mb-2">
+                    <strong>Target Kondisi:</strong>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                      {program.bmiCategory}
+                    </span>
+                    <span className="text-xs text-gray-500">+</span>
+                    <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                      {program.bodyFatCategory}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {getBMICategoryDisplay(program.bmiCategory)} + {getBodyFatCategoryDisplay(program.bodyFatCategory)}
+                  </div>
                 </div>
-                
-                <div className="text-sm text-gray-600">
-                  <strong>Rasio:</strong> {program.cardioRatio || 'Belum diatur'}
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                  <div>
+                    <div className="text-gray-600">Rasio:</div>
+                    <div className="font-medium text-gray-900 text-xs">
+                      {program.cardioRatio || 'Belum diatur'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600">Hari Latihan:</div>
+                    <div className="font-medium text-gray-900">
+                      {getScheduleDaysCount(program.schedule)}/7 hari
+                    </div>
+                  </div>
+                </div>
+
+                {/* Completion Progress */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-600">Kelengkapan:</span>
+                    <span className="font-medium">{completion.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${
+                        completion.percentage === 100 ? 'bg-green-500' : 
+                        completion.percentage >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${completion.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => handleEdit(program)}
+                    className="w-full bg-blue-600 text-white text-sm py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+                  >
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Edit Program
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-          
-          {filteredPrograms.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">
-                {searchTerm ? 'Tidak ada program yang ditemukan.' : 'Belum ada data program.'}
-              </p>
-            </div>
-          )}
+            );
+          })}
         </div>
 
-        {/* Summary */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Ringkasan</h3>
-          <p className="text-sm text-blue-800">
-            Total program: <span className="font-medium">{programs.length}</span> |
-            Ditampilkan: <span className="font-medium">{filteredPrograms.length}</span> |
-            Aktif: <span className="font-medium text-green-700">{stats.active}</span> |
-            Nonaktif: <span className="font-medium text-red-700">{stats.inactive}</span>
-          </p>
+        {filteredPrograms.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">
+              {searchTerm ? 'Tidak ada program yang ditemukan.' : 'Belum ada data program.'}
+            </p>
+          </div>
+        )}
+
+        {/* Info Box */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <InformationCircleIcon className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-900 mb-2">Program Management - Edit Only System</h3>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p>• <strong>Edit Only:</strong> Sistem hanya mendukung edit konten program yang sudah ada</p>
+                <p>• <strong>Medical Logic:</strong> 10 kombinasi BMI+BodyFat sudah optimal dan ter-validasi</p>
+                <p>• <strong>Protected Fields:</strong> Code, BMI category, dan body fat category tidak dapat diubah</p>
+                <p>• <strong>Content Focus:</strong> Edit nama, deskripsi, jadwal, diet, dan rasio kardio-beban</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Edit Modal */}

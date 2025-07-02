@@ -48,15 +48,14 @@ export const apiService = {
     getMe: () => api.get('/auth/me')
   },
 
-  // Programs
+  // Programs - EDIT ONLY (no create/delete)
   programs: {
     getAll: (params = {}) => api.get('/programs', { params }),
-    getByCode: (code) => api.get(`/programs/${code}`),
     getById: (id) => api.get(`/programs/id/${id}`),
     getStats: () => api.get('/programs/stats'),
-    create: (data) => api.post('/programs', data),
+    
+    // ONLY UPDATE allowed - no create/delete
     update: (id, data) => api.put(`/programs/${id}`, data),
-    delete: (id) => api.delete(`/programs/${id}`)
   },
 
   // Rules - SIMPLIFIED ENDPOINTS (assignment only)
@@ -68,13 +67,6 @@ export const apiService = {
     
     // ONLY UPDATE allowed (program assignment only)
     update: (id, data) => api.put(`/rules/${id}`, data),
-    
-    // REMOVED ENDPOINTS (no longer supported):
-    // ❌ create: (data) => api.post('/rules', data)
-    // ❌ delete: (id) => api.delete(`/rules/${id}`)
-    // ❌ toggleStatus: (id) => api.patch(`/rules/${id}/toggle`)
-    // ❌ testForwardChaining: (data) => api.post('/rules/test-forward-chaining', data)
-    // ❌ bulkCreate: (data) => api.post('/rules/bulk', data)
   },
 
   // Consultations

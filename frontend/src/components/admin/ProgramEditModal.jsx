@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, LockClosedIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 const ProgramEditModal = ({ 
@@ -10,11 +10,8 @@ const ProgramEditModal = ({
   loading = false 
 }) => {
   const [formData, setFormData] = useState({
-    code: '',
     name: '',
     description: '',
-    bmiCategory: '',
-    bodyFatCategory: '',
     cardioRatio: '',
     dietRecommendation: '',
     schedule: {
@@ -31,16 +28,14 @@ const ProgramEditModal = ({
   
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('basic');
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Initialize form data when program changes
   useEffect(() => {
     if (program) {
-      setFormData({
-        code: program.code || '',
+      const newFormData = {
         name: program.name || '',
         description: program.description || '',
-        bmiCategory: program.bmiCategory || '',
-        bodyFatCategory: program.bodyFatCategory || '',
         cardioRatio: program.cardioRatio || '50% Kardio - 50% Beban',
         dietRecommendation: program.dietRecommendation || '',
         schedule: program.schedule || {
@@ -53,10 +48,27 @@ const ProgramEditModal = ({
           'Minggu': ''
         },
         isActive: program.isActive !== undefined ? program.isActive : true
-      });
+      };
+      setFormData(newFormData);
       setErrors({});
+      setHasChanges(false);
     }
   }, [program]);
+
+  // Track changes
+  useEffect(() => {
+    if (program) {
+      const hasChanged = 
+        formData.name !== (program.name || '') ||
+        formData.description !== (program.description || '') ||
+        formData.cardioRatio !== (program.cardioRatio || '50% Kardio - 50% Beban') ||
+        formData.dietRecommendation !== (program.dietRecommendation || '') ||
+        formData.isActive !== (program.isActive !== undefined ? program.isActive : true) ||
+        JSON.stringify(formData.schedule) !== JSON.stringify(program.schedule || {});
+      
+      setHasChanges(hasChanged);
+    }
+  }, [formData, program]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -87,24 +99,10 @@ const ProgramEditModal = ({
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.code) {
-      newErrors.code = 'Kode program harus diisi';
-    } else if (!/^P\d+$/.test(formData.code)) {
-      newErrors.code = 'Kode program harus format P1, P2, P3, dst.';
-    }
-
     if (!formData.name) {
       newErrors.name = 'Nama program harus diisi';
     } else if (formData.name.length < 3) {
       newErrors.name = 'Nama program minimal 3 karakter';
-    }
-
-    if (!formData.bmiCategory) {
-      newErrors.bmiCategory = 'Kategori BMI harus dipilih';
-    }
-
-    if (!formData.bodyFatCategory) {
-      newErrors.bodyFatCategory = 'Kategori Body Fat harus dipilih';
     }
 
     // Validate schedule - at least one day should have content
@@ -125,23 +123,34 @@ const ProgramEditModal = ({
       return;
     }
 
+    if (!hasChanges) {
+      toast.info('Tidak ada perubahan untuk disimpan');
+      return;
+    }
+
     try {
       await onSave(formData);
-      onClose();
-      toast.success('Program berhasil disimpan');
     } catch (error) {
       console.error('Save error:', error);
-      toast.error('Gagal menyimpan program');
     }
   };
 
   const handleClose = () => {
+    if (hasChanges) {
+      if (window.confirm('Ada perubahan yang belum disimpan. Yakin ingin menutup?')) {
+        resetForm();
+        onClose();
+      }
+    } else {
+      resetForm();
+      onClose();
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
-      code: '',
       name: '',
       description: '',
-      bmiCategory: '',
-      bodyFatCategory: '',
       cardioRatio: '',
       dietRecommendation: '',
       schedule: {
@@ -157,7 +166,26 @@ const ProgramEditModal = ({
     });
     setErrors({});
     setActiveTab('basic');
-    onClose();
+    setHasChanges(false);
+  };
+
+  const getBMICategoryDisplay = (category) => {
+    const mapping = {
+      'B1': 'Underweight',
+      'B2': 'Ideal',
+      'B3': 'Overweight',
+      'B4': 'Obese'
+    };
+    return mapping[category] || category;
+  };
+
+  const getBodyFatCategoryDisplay = (category) => {
+    const mapping = {
+      'L1': 'Rendah',
+      'L2': 'Normal',
+      'L3': 'Tinggi'
+    };
+    return mapping[category] || category;
   };
 
   if (!isOpen) return null;
@@ -167,9 +195,14 @@ const ProgramEditModal = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {program?.id ? 'Edit Program' : 'Tambah Program'} - {formData.code}
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Edit Program {program?.code}
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Edit konten program - struktur tidak dapat diubah
+            </p>
+          </div>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -178,8 +211,35 @@ const ProgramEditModal = ({
           </button>
         </div>
 
+        {/* Protected Fields Info */}
+        <div className="mx-6 mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <LockClosedIcon className="h-5 w-5 text-gray-500 mr-3 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Protected Fields (Read-Only)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Code:</span>
+                  <span className="ml-2 font-medium">{program?.code}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">BMI Target:</span>
+                  <span className="ml-2 font-medium">{getBMICategoryDisplay(program?.bmiCategory)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Body Fat Target:</span>
+                  <span className="ml-2 font-medium">{getBodyFatCategoryDisplay(program?.bodyFatCategory)}</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Fields ini tidak dapat diubah untuk menjaga integritas medical logic
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Tabs */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 mt-4">
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('basic')}
@@ -223,26 +283,26 @@ const ProgramEditModal = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kode Program *
+                      Nama Program *
                     </label>
                     <input
                       type="text"
-                      name="code"
-                      value={formData.code}
+                      name="name"
+                      value={formData.name}
                       onChange={handleChange}
                       className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.code ? 'border-red-300' : 'border-gray-300'
+                        errors.name ? 'border-red-300' : 'border-gray-300'
                       }`}
-                      placeholder="P1, P2, P3..."
+                      placeholder="Fat Loss Program"
                     />
-                    {errors.code && (
-                      <p className="mt-1 text-sm text-red-600">{errors.code}</p>
+                    {errors.name && (
+                      <p className="mt-1 text-sm text-red-600">{errors.name}</p>
                     )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status
+                      Status Program
                     </label>
                     <div className="flex items-center">
                       <input
@@ -256,87 +316,27 @@ const ProgramEditModal = ({
                         Program Aktif
                       </label>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Nonaktif = tidak akan muncul dalam forward chaining
+                    </p>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Program *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.name ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Fat Loss Program"
-                  />
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Deskripsi
+                    Deskripsi Program
                   </label>
                   <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    rows={3}
+                    rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Deskripsi program olahraga..."
+                    placeholder="Deskripsi lengkap program olahraga..."
                   />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kategori BMI *
-                    </label>
-                    <select
-                      name="bmiCategory"
-                      value={formData.bmiCategory}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.bmiCategory ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                    >
-                      <option value="">Pilih Kategori BMI</option>
-                      <option value="B1">B1 - Underweight (&lt;18.5)</option>
-                      <option value="B2">B2 - Ideal (18.5-24.9)</option>
-                      <option value="B3">B3 - Overweight (25-29.9)</option>
-                      <option value="B4">B4 - Obese (≥30)</option>
-                    </select>
-                    {errors.bmiCategory && (
-                      <p className="mt-1 text-sm text-red-600">{errors.bmiCategory}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kategori Body Fat *
-                    </label>
-                    <select
-                      name="bodyFatCategory"
-                      value={formData.bodyFatCategory}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.bodyFatCategory ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                    >
-                      <option value="">Pilih Kategori Body Fat</option>
-                      <option value="L1">L1 - Rendah</option>
-                      <option value="L2">L2 - Normal</option>
-                      <option value="L3">L3 - Tinggi</option>
-                    </select>
-                    {errors.bodyFatCategory && (
-                      <p className="mt-1 text-sm text-red-600">{errors.bodyFatCategory}</p>
-                    )}
-                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Jelaskan tujuan dan karakteristik program ini
+                  </p>
                 </div>
               </div>
             )}
@@ -345,10 +345,16 @@ const ProgramEditModal = ({
             {activeTab === 'schedule' && (
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-sm font-medium text-blue-900 mb-2">Jadwal Latihan 7 Hari</h3>
-                  <p className="text-sm text-blue-800">
-                    Isi jadwal latihan untuk setiap hari. Format: "1. Exercise: sets×reps"
-                  </p>
+                  <div className="flex items-start">
+                    <InformationCircleIcon className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-900 mb-2">Jadwal Latihan 7 Hari</h3>
+                      <p className="text-sm text-blue-800">
+                        Isi jadwal latihan untuk setiap hari. Format: "1. Exercise: sets×reps". 
+                        Gunakan "Rest" atau "Cardio" untuk hari istirahat/kardio.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {Object.keys(formData.schedule).map((day) => (
@@ -404,7 +410,7 @@ atau "Rest/Cardio" untuk hari istirahat`}
                     name="dietRecommendation"
                     value={formData.dietRecommendation}
                     onChange={handleChange}
-                    rows={6}
+                    rows={8}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Rekomendasi diet dan nutrisi untuk program ini...
 
@@ -430,21 +436,38 @@ Contoh:
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Menyimpan...' : 'Simpan Program'}
-            </button>
+          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+            <div className="text-sm text-gray-600">
+              {hasChanges ? (
+                <span className="text-orange-600 font-medium">● Ada perubahan yang belum disimpan</span>
+              ) : (
+                <span>Tidak ada perubahan</span>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !hasChanges}
+                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Menyimpan...</span>
+                  </div>
+                ) : (
+                  'Simpan Perubahan'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -108,29 +108,29 @@ export const programValidator = [
     })
 ];
 
+// Keep existing validators, just update program section:
+
+// REMOVED programValidator (no longer needed for creation)
+
+// Updated updateProgramValidator (more restrictive)
 export const updateProgramValidator = [
-  body('code')
-    .optional()
-    .isLength({ min: 2, max: 10 }).withMessage('Program code must be between 2 and 10 characters')
-    .matches(/^[A-Z0-9]+$/).withMessage('Program code must contain only uppercase letters and numbers'),
+  // CONTENT-ONLY fields allowed
   body('name')
     .optional()
     .isLength({ min: 2, max: 100 }).withMessage('Program name must be between 2 and 100 characters'),
+  
   body('description')
     .optional()
     .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
-  body('bmiCategory')
-    .optional()
-    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
-  body('bodyFatCategory')
-    .optional()
-    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
+  
   body('cardioRatio')
     .optional()
     .isLength({ max: 50 }).withMessage('Cardio ratio must not exceed 50 characters'),
+  
   body('dietRecommendation')
     .optional()
     .isLength({ max: 1000 }).withMessage('Diet recommendation must not exceed 1000 characters'),
+  
   body('schedule')
     .optional()
     .isObject().withMessage('Schedule must be an object')
@@ -145,12 +145,37 @@ export const updateProgramValidator = [
       }
       return true;
     }),
+  
   body('isActive')
     .optional()
-    .isBoolean().withMessage('isActive must be a boolean')
+    .isBoolean().withMessage('isActive must be a boolean'),
+
+  // BLOCKED FIELDS validation
+  body('code')
+    .custom((value, { req }) => {
+      if (value !== undefined) {
+        throw new Error('Program code cannot be modified');
+      }
+      return true;
+    }),
+  
+  body('bmiCategory')
+    .custom((value, { req }) => {
+      if (value !== undefined) {
+        throw new Error('BMI category cannot be modified');
+      }
+      return true;
+    }),
+  
+  body('bodyFatCategory')
+    .custom((value, { req }) => {
+      if (value !== undefined) {
+        throw new Error('Body fat category cannot be modified');
+      }
+      return true;
+    })
 ];
 
-// NEW: Rule validators
 export const ruleValidator = [
   body('name')
     .notEmpty().withMessage('Rule name is required')
