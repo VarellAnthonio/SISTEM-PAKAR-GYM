@@ -68,8 +68,8 @@ Rule.findByCondition = async function(bmiCategory, bodyFatCategory) {
       where: {
         isActive: true
       }
-    }],
-    order: [['priority', 'ASC']]
+    }]
+    // REMOVED: order: [['priority', 'ASC']] - priority column doesn't exist
   });
 };
 
@@ -85,13 +85,16 @@ Rule.getAllActiveRules = async function() {
         isActive: true
       }
     }],
-    order: [['priority', 'ASC'], ['bmiCategory', 'ASC'], ['bodyFatCategory', 'ASC']]
+    order: [['bmiCategory', 'ASC'], ['bodyFatCategory', 'ASC']]
+    // REMOVED: ['priority', 'ASC'] - priority column doesn't exist
   });
 };
 
-// Forward Chaining Implementation
+// Forward Chaining Implementation - FIXED
 Rule.forwardChaining = async function(bmi, bodyFat, gender) {
   try {
+    console.log('Forward chaining input:', { bmi, bodyFat, gender });
+    
     // Determine BMI category
     let bmiCategory;
     if (bmi < 18.5) bmiCategory = 'B1'; // Underweight
@@ -111,10 +114,13 @@ Rule.forwardChaining = async function(bmi, bodyFat, gender) {
       else bodyFatCategory = 'L3'; // Tinggi
     }
 
-    // Find matching rule
+    console.log('Determined categories:', { bmiCategory, bodyFatCategory });
+
+    // Find matching rule - FIXED query without priority
     const rule = await this.findByCondition(bmiCategory, bodyFatCategory);
     
     if (!rule) {
+      console.log('No rule found, using fallback to P2');
       // Fallback to default program (P2)
       const defaultProgram = await Program.findOne({
         where: { code: 'P2', isActive: true }
@@ -129,6 +135,8 @@ Rule.forwardChaining = async function(bmi, bodyFat, gender) {
       };
     }
 
+    console.log('Rule found:', { ruleId: rule.id, programCode: rule.program.code });
+
     return {
       bmiCategory,
       bodyFatCategory,
@@ -137,6 +145,7 @@ Rule.forwardChaining = async function(bmi, bodyFat, gender) {
       isDefault: false
     };
   } catch (error) {
+    console.error('Forward chaining error details:', error);
     throw new Error(`Forward chaining error: ${error.message}`);
   }
 };
@@ -219,56 +228,77 @@ Consultation.getStatistics = async function() {
   };
 };
 
-// Create consultation with forward chaining
+// Create consultation with forward chaining - ENHANCED ERROR HANDLING
 Consultation.createWithForwardChaining = async function(consultationData) {
   const { userId, weight, height, bodyFatPercentage, notes } = consultationData;
   
-  // Get user for gender information
-  const user = await User.findByPk(userId);
-  if (!user) {
-    throw new Error('User not found');
+  try {
+    console.log('Creating consultation with forward chaining:', consultationData);
+    
+    // Get user for gender information
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    console.log('User found:', { id: user.id, gender: user.gender });
+
+    // Calculate BMI
+    const bmi = weight / Math.pow(height / 100, 2);
+    console.log('Calculated BMI:', bmi);
+
+    // Run forward chaining
+    const chainResult = await Rule.forwardChaining(bmi, bodyFatPercentage, user.gender);
+    console.log('Forward chaining result:', chainResult);
+
+    if (!chainResult.program) {
+      throw new Error('No program found by forward chaining');
+    }
+
+    // Create consultation record
+    const consultation = await this.create({
+      userId,
+      programId: chainResult.program.id,
+      ruleId: chainResult.rule ? chainResult.rule.id : null,
+      weight,
+      height,
+      bodyFatPercentage,
+      bmi: parseFloat(bmi.toFixed(2)),
+      bmiCategory: chainResult.bmiCategory,
+      bodyFatCategory: chainResult.bodyFatCategory,
+      isDefault: chainResult.isDefault,
+      notes,
+      status: 'active'
+    });
+
+    console.log('Consultation created:', { id: consultation.id });
+
+    // Return consultation with associations
+    const resultConsultation = await this.findByPk(consultation.id, {
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email', 'gender']
+        },
+        {
+          model: Program,
+          as: 'program'
+        },
+        {
+          model: Rule,
+          as: 'rule'
+        }
+      ]
+    });
+
+    console.log('Consultation created successfully with associations');
+    return resultConsultation;
+
+  } catch (error) {
+    console.error('Create consultation with forward chaining error:', error);
+    throw error;
   }
-
-  // Calculate BMI
-  const bmi = weight / Math.pow(height / 100, 2);
-
-  // Run forward chaining
-  const chainResult = await Rule.forwardChaining(bmi, bodyFatPercentage, user.gender);
-
-  // Create consultation record
-  const consultation = await this.create({
-    userId,
-    programId: chainResult.program.id,
-    ruleId: chainResult.rule ? chainResult.rule.id : null,
-    weight,
-    height,
-    bodyFatPercentage,
-    bmi: parseFloat(bmi.toFixed(2)),
-    bmiCategory: chainResult.bmiCategory,
-    bodyFatCategory: chainResult.bodyFatCategory,
-    isDefault: chainResult.isDefault,
-    notes,
-    status: 'active'
-  });
-
-  // Return consultation with associations
-  return await this.findByPk(consultation.id, {
-    include: [
-      {
-        model: User,
-        as: 'user',
-        attributes: ['id', 'name', 'email', 'gender']
-      },
-      {
-        model: Program,
-        as: 'program'
-      },
-      {
-        model: Rule,
-        as: 'rule'
-      }
-    ]
-  });
 };
 
 // Initialize associations

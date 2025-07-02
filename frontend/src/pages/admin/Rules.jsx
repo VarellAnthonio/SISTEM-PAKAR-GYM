@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
-import RuleEditModal from '../../components/admin/RuleEditModal';
-import { MagnifyingGlassIcon, PencilIcon } from '@heroicons/react/24/outline';
+// Removed RuleEditModal import - rules are now view-only
+// import RuleEditModal from '../../components/admin/RuleEditModal';
+import { MagnifyingGlassIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { programService } from '../../services/program';
 import { ruleService } from '../../services/rule';
 import toast from 'react-hot-toast';
@@ -11,9 +12,11 @@ const AdminRules = () => {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedRule, setSelectedRule] = useState(null);
-  const [saveLoading, setSaveLoading] = useState(false);
+
+  // Removed edit-related states
+  // const [showEditModal, setShowEditModal] = useState(false);
+  // const [selectedRule, setSelectedRule] = useState(null);
+  // const [saveLoading, setSaveLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -98,43 +101,9 @@ const AdminRules = () => {
     return program ? `${program.code} - ${program.name}` : 'Program tidak ditemukan';
   };
 
-  const handleEdit = (rule) => {
-    setSelectedRule(rule);
-    setShowEditModal(true);
-  };
-
-  const handleSave = async (formData) => {
-    try {
-      setSaveLoading(true);
-      
-      const result = await ruleService.admin.update(selectedRule.id, {
-        programId: formData.programId
-      });
-      
-      if (result.success) {
-        toast.success('Program assignment berhasil diperbarui');
-        setShowEditModal(false);
-        await fetchData(); // Refresh data
-      } else {
-        throw new Error(result.message);
-      }
-
-    } catch (error) {
-      console.error('Save rule error:', error);
-      
-      // Fallback for demo mode
-      setRules(prev => prev.map(rule => 
-        rule.id === selectedRule.id 
-          ? { ...rule, programId: parseInt(formData.programId) }
-          : rule
-      ));
-      toast.success('Program assignment berhasil diperbarui (demo mode)');
-      setShowEditModal(false);
-      
-    } finally {
-      setSaveLoading(false);
-    }
-  };
+  // Removed edit-related functions since rules are view-only
+  // const handleEdit = (rule) => { ... }
+  // const handleSave = async (formData) => { ... }
 
   if (loading) {
     return (
@@ -153,16 +122,22 @@ const AdminRules = () => {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Rule Configuration</h1>
           <p className="text-gray-600 mt-1">
-            Kelola assignment program untuk 10 kombinasi BMI + Body Fat
+            View 10 kombinasi BMI + Body Fat dan program assignment yang sudah optimal
           </p>
         </div>
 
         {/* Quick Info */}
-        <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <p className="text-sm text-gray-700">
-            <strong>Rule Management:</strong> 10 kombinasi BMI+BodyFat → Program assignment. 
-            Edit assignment saja, kondisi tidak dapat diubah.
-          </p>
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <CheckCircleIcon className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-green-900 mb-2">Medical Logic System - Optimal Configuration</h3>
+              <p className="text-sm text-green-800">
+                <strong>View-Only System:</strong> 10 kombinasi BMI+BodyFat sudah optimal secara medis dan tidak perlu diubah. 
+                Setiap kondisi user akan otomatis diarahkan ke program yang tepat melalui forward chaining.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
@@ -217,7 +192,7 @@ const AdminRules = () => {
                     Program Assignment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
+                    Status
                   </th>
                 </tr>
               </thead>
@@ -244,14 +219,9 @@ const AdminRules = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleEdit(rule)}
-                        className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
-                        title="Edit Program Assignment"
-                      >
-                        <PencilIcon className="h-4 w-4 mr-1" />
-                        Edit
-                      </button>
+                      <span className="text-gray-500 text-sm">
+                        View Only
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -273,12 +243,9 @@ const AdminRules = () => {
                       {rule.bodyFatCategory}
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleEdit(rule)}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </button>
+                  <span className="text-gray-500 text-xs">
+                    View Only
+                  </span>
                 </div>
                 
                 <div className="mb-2">
@@ -324,16 +291,18 @@ const AdminRules = () => {
         </div>
 
         {/* Summary */}
-        <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">System Status</h3>
-          <p className="text-sm text-gray-700">
-            ✅ {rules.length}/10 kombinasi aktif |
-            ✅ Coverage: 100% |
-            ✅ Forward chaining operational
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-green-900 mb-2">Medical Logic System Status</h3>
+          <p className="text-sm text-green-800">
+            ✅ {rules.length}/10 kombinasi medis optimal |
+            ✅ Coverage: 100% kondisi user |
+            ✅ Forward chaining operational |
+            ✅ View-only untuk menjaga integritas sistem
           </p>
         </div>
 
-        {/* Edit Modal */}
+        {/* Removed Edit Modal - Rules are now view-only */}
+        {/* 
         <RuleEditModal
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
@@ -343,6 +312,7 @@ const AdminRules = () => {
           programs={programs}
           mode="assignment-only"
         />
+        */}
       </div>
     </AdminSidebarLayout>
   );

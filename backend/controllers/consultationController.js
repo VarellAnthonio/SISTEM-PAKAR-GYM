@@ -9,6 +9,8 @@ export const createConsultation = async (req, res) => {
     const { weight, height, bodyFatPercentage, notes } = req.body;
     const userId = req.user.id;
 
+    console.log('Consultation request:', { userId, weight, height, bodyFatPercentage });
+
     // Validation
     if (!weight || !height || !bodyFatPercentage) {
       return res.status(400).json({
@@ -16,6 +18,30 @@ export const createConsultation = async (req, res) => {
         message: 'Weight, height, and body fat percentage are required'
       });
     }
+
+    // Additional validation
+    if (weight <= 0 || weight > 300) {
+      return res.status(400).json({
+        success: false,
+        message: 'Weight must be between 1 and 300 kg'
+      });
+    }
+
+    if (height <= 0 || height > 250) {
+      return res.status(400).json({
+        success: false,
+        message: 'Height must be between 1 and 250 cm'
+      });
+    }
+
+    if (bodyFatPercentage <= 0 || bodyFatPercentage > 70) {
+      return res.status(400).json({
+        success: false,
+        message: 'Body fat percentage must be between 1 and 70%'
+      });
+    }
+
+    console.log('Validation passed, creating consultation...');
 
     // Create consultation using forward chaining
     const consultation = await Consultation.createWithForwardChaining({
@@ -26,6 +52,11 @@ export const createConsultation = async (req, res) => {
       notes
     });
 
+    console.log('Consultation created successfully:', { 
+      id: consultation.id, 
+      programCode: consultation.program?.code 
+    });
+
     res.status(201).json({
       success: true,
       message: 'Consultation created successfully',
@@ -34,9 +65,60 @@ export const createConsultation = async (req, res) => {
 
   } catch (error) {
     console.error('Create consultation error:', error);
+    
+    // Handle specific error types
+    if (error.message.includes('User not found')) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    if (error.message.includes('No program found')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Unable to determine appropriate program. Please contact support.'
+      });
+    }
+    
+    if (error.message.includes('Forward chaining error')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Forward chaining system error. Please try again or contact support.'
+      });
+    }
+
+    // Sequelize validation errors
+    if (error.name === 'SequelizeValidationError') {
+      const validationErrors = error.errors.map(err => ({
+        field: err.path,
+        message: err.message
+      }));
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: validationErrors
+      });
+    }
+
+    // Database errors
+    if (error.name === 'SequelizeDatabaseError') {
+      console.error('Database error:', error.original);
+      return res.status(500).json({
+        success: false,
+        message: 'Database error occurred. Please try again.'
+      });
+    }
+
+    // Generic error response
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to create consultation'
+      message: error.message || 'Failed to create consultation',
+      ...(process.env.NODE_ENV === 'development' && { 
+        error: error.message,
+        stack: error.stack 
+      })
     });
   }
 };

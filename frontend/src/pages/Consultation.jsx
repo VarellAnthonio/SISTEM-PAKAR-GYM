@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SidebarLayout from '../components/common/SidebarLayout';
 import { useAuth } from '../contexts/AuthContext';
+import { consultationService } from '../services/consultation';
+import toast from 'react-hot-toast';
 
 const Consultation = () => {
   const navigate = useNavigate();
@@ -55,66 +57,6 @@ const Consultation = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const calculateBMI = (weight, height) => {
-    const heightInMeters = height / 100;
-    return weight / (heightInMeters * heightInMeters);
-  };
-
-  const getBMICategory = (bmi) => {
-    if (bmi < 18.5) return 'B1'; // Underweight
-    if (bmi >= 18.5 && bmi <= 24.9) return 'B2'; // Ideal
-    if (bmi >= 25 && bmi <= 29.9) return 'B3'; // Overweight
-    return 'B4'; // Obese
-  };
-
-  const getBodyFatCategory = (bodyFat, gender) => {
-    if (gender === 'male') {
-      if (bodyFat < 10) return 'L1'; // Rendah
-      if (bodyFat >= 10 && bodyFat <= 20) return 'L2'; // Normal
-      return 'L3'; // Tinggi
-    } else {
-      if (bodyFat < 20) return 'L1'; // Rendah
-      if (bodyFat >= 20 && bodyFat <= 30) return 'L2'; // Normal
-      return 'L3'; // Tinggi
-    }
-  };
-
-  // COMPLETE P1-P10 FORWARD CHAINING MAPPING
-  const getProgramCode = (bmiCategory, bodyFatCategory) => {
-    const mapping = {
-      'B1-L1': 'P1', // Underweight + Rendah → Fat Loss Program
-      'B2-L2': 'P2', // Ideal + Normal → Muscle Gain Program
-      'B3-L3': 'P3', // Overweight + Tinggi → Weight Loss Program
-      'B4-L3': 'P4', // Obese + Tinggi → Extreme Weight Loss Program
-      'B1-L2': 'P5', // Underweight + Normal → Lean Muscle Program
-      'B2-L1': 'P6', // Ideal + Rendah → Strength & Definition Program
-      'B2-L3': 'P7', // Ideal + Tinggi → Fat Burning & Toning Program
-      'B3-L2': 'P8', // Overweight + Normal → Body Recomposition Program
-      'B1-L3': 'P9', // Underweight + Tinggi → Beginner Muscle Building Program
-      'B3-L1': 'P10' // Overweight + Rendah → Advanced Strength Program
-    };
-    
-    const key = `${bmiCategory}-${bodyFatCategory}`;
-    return mapping[key] || 'P2'; // Default to P2 if no exact match
-  };
-
-  // Get program name for display
-  const getProgramName = (programCode) => {
-    const programNames = {
-      'P1': 'Fat Loss Program',
-      'P2': 'Muscle Gain Program',
-      'P3': 'Weight Loss Program',
-      'P4': 'Extreme Weight Loss Program',
-      'P5': 'Lean Muscle Program',
-      'P6': 'Strength & Definition Program',
-      'P7': 'Fat Burning & Toning Program',
-      'P8': 'Body Recomposition Program',
-      'P9': 'Beginner Muscle Building Program',
-      'P10': 'Advanced Strength Program'
-    };
-    return programNames[programCode] || 'Default Program';
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -123,51 +65,63 @@ const Consultation = () => {
     setLoading(true);
     
     try {
-      // Calculate BMI and determine categories
-      const bmi = calculateBMI(parseFloat(formData.weight), parseFloat(formData.height));
-      const bmiCategory = getBMICategory(bmi);
-      const bodyFatCategory = getBodyFatCategory(parseFloat(formData.bodyFatPercentage), user.gender);
-      const programCode = getProgramCode(bmiCategory, bodyFatCategory);
-      const programName = getProgramName(programCode);
-      
-      // Create consultation result
-      const consultationResult = {
-        user: user.name,
-        weight: formData.weight,
-        height: formData.height,
-        bodyFatPercentage: formData.bodyFatPercentage,
-        bmi: bmi.toFixed(1),
-        bmiCategory,
-        bodyFatCategory,
-        programCode,
-        programName,
-        timestamp: new Date().toISOString()
+      // Send consultation data to backend for forward chaining
+      const consultationData = {
+        weight: parseFloat(formData.weight),
+        height: parseFloat(formData.height),
+        bodyFatPercentage: parseFloat(formData.bodyFatPercentage),
+        notes: 'Konsultasi program olahraga'
       };
+
+      console.log('Sending consultation data to backend:', consultationData);
       
-      console.log('Forward Chaining Result:', {
-        input: {
-          bmi: bmi.toFixed(1),
-          bodyFat: formData.bodyFatPercentage,
-          gender: user.gender
-        },
-        categories: {
-          bmi: bmiCategory,
-          bodyFat: bodyFatCategory
-        },
-        result: {
-          program: programCode,
-          name: programName
-        }
-      });
+      // Call backend API for forward chaining
+      const result = await consultationService.create(consultationData);
       
-      // Navigate to results page with data
-      navigate('/consultation/result', { 
-        state: { result: consultationResult } 
-      });
+      if (result.success) {
+        console.log('Backend forward chaining result:', result.data);
+        
+        // Prepare consultation result for display
+        const consultationResult = {
+          user: user.name,
+          weight: formData.weight,
+          height: formData.height,
+          bodyFatPercentage: formData.bodyFatPercentage,
+          bmi: result.data.bmi,
+          bmiCategory: result.data.bmiCategory,
+          bodyFatCategory: result.data.bodyFatCategory,
+          programCode: result.data.program?.code,
+          programName: result.data.program?.name,
+          timestamp: new Date().toISOString(),
+          consultationId: result.data.id
+        };
+        
+        console.log('Navigating to results with:', consultationResult);
+        
+        toast.success('Konsultasi berhasil! Program telah ditentukan.');
+        
+        // Navigate to results page with real data from backend
+        navigate('/consultation/result', { 
+          state: { result: consultationResult } 
+        });
+        
+      } else {
+        throw new Error(result.message || 'Konsultasi gagal');
+      }
       
     } catch (error) {
       console.error('Consultation error:', error);
-      setErrors({ general: 'Terjadi kesalahan dalam proses konsultasi' });
+      
+      // Show user-friendly error message
+      if (error.message.includes('Network')) {
+        setErrors({ general: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.' });
+      } else if (error.message.includes('forward chaining')) {
+        setErrors({ general: 'Sistem forward chaining mengalami masalah. Silakan coba lagi.' });
+      } else {
+        setErrors({ general: error.message || 'Terjadi kesalahan dalam proses konsultasi' });
+      }
+      
+      toast.error('Konsultasi gagal. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
@@ -177,8 +131,16 @@ const Consultation = () => {
     <SidebarLayout>
       <div className="max-w-2xl">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          Isi Data Konsultasi
+          Konsultasi Program Olahraga
         </h1>
+        
+        {/* System Info */}
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-blue-900 mb-2">Sistem Forward Chaining</h3>
+          <p className="text-sm text-blue-800">
+            Data Anda akan diproses menggunakan sistem forward chaining di backend untuk menentukan program yang tepat dari P1-P10 berdasarkan kondisi BMI dan persentase lemak tubuh.
+          </p>
+        </div>
         
         <div className="bg-white rounded-lg shadow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -205,6 +167,7 @@ const Consultation = () => {
                   errors.weight ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Masukkan berat badan Anda"
+                disabled={loading}
               />
               {errors.weight && (
                 <p className="mt-1 text-sm text-red-600">{errors.weight}</p>
@@ -227,6 +190,7 @@ const Consultation = () => {
                   errors.height ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Masukkan tinggi badan Anda"
+                disabled={loading}
               />
               {errors.height && (
                 <p className="mt-1 text-sm text-red-600">{errors.height}</p>
@@ -249,6 +213,7 @@ const Consultation = () => {
                   errors.bodyFatPercentage ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Masukkan persentase lemak tubuh Anda"
+                disabled={loading}
               />
               {errors.bodyFatPercentage && (
                 <p className="mt-1 text-sm text-red-600">{errors.bodyFatPercentage}</p>
@@ -260,28 +225,37 @@ const Consultation = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-4 py-3 bg-gray-600 text-white font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
               >
-                {loading ? 'Memproses...' : 'Konsultasi'}
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Memproses Forward Chaining...
+                  </>
+                ) : (
+                  'Mulai Konsultasi'
+                )}
               </button>
             </div>
           </form>
         </div>
 
-        {/* Forward Chaining Info */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Sistem Forward Chaining:</h3>
-          <div className="text-sm text-blue-800 space-y-1">
-            <p>• Sistem akan menganalisis BMI dan persentase lemak tubuh Anda</p>
-            <p>• Forward chaining akan menentukan program yang tepat dari P1-P10</p>
-            <p>• Program disesuaikan dengan gender ({user.gender === 'male' ? 'Pria' : 'Wanita'})</p>
+        {/* Process Explanation */}
+        <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-green-900 mb-2">Proses Forward Chaining:</h3>
+          <div className="text-sm text-green-800 space-y-1">
+            <p>1. Sistem menghitung BMI dari berat dan tinggi badan Anda</p>
+            <p>2. Menentukan kategori BMI (B1: Underweight, B2: Ideal, B3: Overweight, B4: Obese)</p>
+            <p>3. Menentukan kategori lemak tubuh berdasarkan gender ({user.gender === 'male' ? 'Pria' : 'Wanita'})</p>
+            <p>4. Forward chaining engine memilih program optimal dari P1-P10</p>
+            <p>5. Menampilkan jadwal latihan yang telah diedit admin (real-time dari database)</p>
           </div>
         </div>
 
         {/* Program Categories Info */}
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-green-900 mb-2">Program yang Tersedia:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-green-800">
+        <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-gray-900 mb-2">Program yang Tersedia:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700">
             <div>
               <p>• P1: Fat Loss Program</p>
               <p>• P2: Muscle Gain Program</p>
@@ -329,7 +303,7 @@ const Consultation = () => {
             <li>• Ukur persentase lemak tubuh menggunakan alat yang tepat</li>
             <li>• Konsultasi dilakukan sebaiknya di pagi hari setelah bangun tidur</li>
             <li>• Gunakan kalkulator kesehatan jika belum tahu persentase lemak tubuh</li>
-            <li>• Konsistensi pengukuran akan memberikan hasil yang lebih baik</li>
+            <li>• Jadwal yang ditampilkan adalah hasil edit admin terbaru (real-time)</li>
           </ul>
         </div>
 
@@ -338,6 +312,7 @@ const Consultation = () => {
           <button
             onClick={() => navigate('/calculator')}
             className="w-full px-4 py-2 bg-green-100 border border-green-300 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200"
+            disabled={loading}
           >
             💡 Belum tahu persentase lemak tubuh? Gunakan Kalkulator Kesehatan
           </button>
