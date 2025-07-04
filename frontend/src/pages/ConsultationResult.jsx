@@ -1,18 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarLayout from '../components/common/SidebarLayout';
-import { consultationService } from '../services/consultation';
 import { programService } from '../services/program';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const ConsultationResult = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const result = location.state?.result;
+  const pdfRef = useRef();
   
   const [programData, setProgramData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   // If no result data, redirect to consultation
   useEffect(() => {
@@ -109,30 +111,99 @@ const ConsultationResult = () => {
     return mapping[bodyFatCategory] || 'Unknown';
   };
 
-  const handleSaveConsultation = async () => {
-    try {
-      setSaving(true);
-      
-      // Create consultation record in database
-      const consultationData = {
-        weight: parseFloat(result.weight),
-        height: parseFloat(result.height),
-        bodyFatPercentage: parseFloat(result.bodyFatPercentage),
-        notes: `Hasil konsultasi: ${result.programCode} - ${programData?.name || result.programName}`
-      };
+  const formatDateForPDF = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-      const saveResult = await consultationService.create(consultationData);
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloadingPDF(true);
+      toast.loading('Mempersiapkan PDF...', { id: 'pdf-generation' });
       
-      if (saveResult.success) {
-        toast.success('Hasil konsultasi berhasil disimpan');
-      } else {
-        toast.error(saveResult.message || 'Gagal menyimpan hasil konsultasi');
+      // Get the PDF content element
+      const element = pdfRef.current;
+      
+      if (!element) {
+        toast.error('Gagal mengakses konten untuk PDF', { id: 'pdf-generation' });
+        return;
       }
+
+      // Create canvas from the element
+      toast.loading('Mengambil screenshot konten...', { id: 'pdf-generation' });
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        onclone: (clonedDoc) => {
+          // Ensure all styles are applied to cloned document
+          const clonedElement = clonedDoc.querySelector('[data-pdf-content]');
+          if (clonedElement) {
+            clonedElement.style.padding = '20px';
+            clonedElement.style.backgroundColor = '#ffffff';
+          }
+        }
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Create PDF
+      toast.loading('Membuat dokumen PDF...', { id: 'pdf-generation' });
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Calculate dimensions to fit content properly
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      // Calculate scale to fit content in PDF with margins
+      const margin = 10;
+      const availableWidth = pdfWidth - (margin * 2);
+      const availableHeight = pdfHeight - (margin * 2);
+      
+      const widthRatio = availableWidth / (imgWidth * 0.264583); // Convert px to mm
+      const heightRatio = availableHeight / (imgHeight * 0.264583);
+      const ratio = Math.min(widthRatio, heightRatio);
+      
+      const finalWidth = (imgWidth * 0.264583) * ratio;
+      const finalHeight = (imgHeight * 0.264583) * ratio;
+      
+      const imgX = (pdfWidth - finalWidth) / 2;
+      const imgY = margin;
+
+      // Add image to PDF
+      pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
+      
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fileName = `Hasil_Konsultasi_${result.programCode}_${timestamp}.pdf`;
+      
+      // Save PDF
+      toast.loading('Menyimpan file...', { id: 'pdf-generation' });
+      pdf.save(fileName);
+      
+      toast.success('PDF berhasil didownload!', { id: 'pdf-generation' });
+      
     } catch (error) {
-      console.error('Error saving consultation:', error);
-      toast.error('Gagal menyimpan hasil konsultasi');
+      console.error('Error generating PDF:', error);
+      toast.error('Gagal membuat PDF. Silakan coba lagi.', { id: 'pdf-generation' });
     } finally {
-      setSaving(false);
+      setDownloadingPDF(false);
     }
   };
 
@@ -186,122 +257,303 @@ const ConsultationResult = () => {
           </p>
         </div>
         
-        {/* User Info */}
-        <div className="bg-white rounded-lg shadow p-4 lg:p-6 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Nama: <span className="font-medium text-gray-900">{result.user}</span></p>
-              <p className="text-sm text-gray-600">BMI: <span className="font-medium text-gray-900">{getBMIDisplay(result.bmiCategory)}</span></p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Persentase Lemak: <span className="font-medium text-gray-900">{getBodyFatDisplay(result.bodyFatCategory)}</span></p>
-              <p className="text-sm text-gray-600">Program: <span className="font-medium text-blue-600">{programData.code} - {programData.name}</span></p>
-            </div>
-          </div>
-        </div>
-
-        {/* Program Schedule - FROM DATABASE */}
-        <div className="bg-white rounded-lg shadow p-4 lg:p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Program Latihan</h2>
-            <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-              Database Real-time
-            </span>
-          </div>
-          
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-hidden border border-gray-200 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hari
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Gerakan
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {Object.entries(programData.schedule || {}).map(([day, exercise]) => (
-                  <tr key={day}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {day}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      <div className="whitespace-pre-line">{exercise || 'Belum ada jadwal'}</div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* PDF Content Area */}
+        <div 
+          ref={pdfRef} 
+          data-pdf-content
+          className="bg-white p-8 rounded-lg shadow-lg"
+          style={{ minHeight: '800px' }}
+        >
+          {/* Header for PDF */}
+          <div className="text-center mb-8 border-b-2 border-gray-200 pb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              SISTEM PAKAR PROGRAM OLAHRAGA
+            </h1>
+            <h2 className="text-xl font-semibold text-blue-600 mb-2">
+              Hasil Konsultasi Program Olahraga
+            </h2>
+            <p className="text-sm text-gray-600">
+              Tanggal Konsultasi: {formatDateForPDF(result.timestamp)}
+            </p>
           </div>
 
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
-            {Object.entries(programData.schedule || {}).map(([day, exercise]) => (
-              <div key={day} className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-sm font-medium text-gray-900">{day}</h3>
-                </div>
-                <div className="text-sm text-gray-600 whitespace-pre-line">
-                  {exercise || 'Belum ada jadwal'}
-                </div>
+          {/* User Info */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2">
+              Informasi Pengguna
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-lg">
+              <div className="space-y-2">
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">Nama:</span> 
+                  <span className="ml-2 text-gray-900">{result.user}</span>
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">Berat Badan:</span> 
+                  <span className="ml-2 text-gray-900">{result.weight} kg</span>
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">Tinggi Badan:</span> 
+                  <span className="ml-2 text-gray-900">{result.height} cm</span>
+                </p>
               </div>
-            ))}
+              <div className="space-y-2">
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">BMI:</span> 
+                  <span className="ml-2 text-gray-900">{result.bmi} ({getBMIDisplay(result.bmiCategory)})</span>
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">Persentase Lemak:</span> 
+                  <span className="ml-2 text-gray-900">{result.bodyFatPercentage}% ({getBodyFatDisplay(result.bodyFatCategory)})</span>
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">Program:</span> 
+                  <span className="ml-2 font-semibold text-blue-600">{programData.code} - {programData.name}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Program Schedule */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2">
+              Jadwal Program Latihan
+            </h3>
+            <div className="overflow-hidden border border-gray-300 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-1/6">
+                      Hari
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                      Program Latihan
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {Object.entries(programData.schedule || {}).map(([day, exercise]) => (
+                    <tr key={day} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-200">
+                        {day}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        <div className="whitespace-pre-line leading-relaxed">
+                          {exercise || 'Belum ada jadwal'}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Additional Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Cardio Ratio */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
+              <h4 className="font-semibold text-blue-900 mb-3 text-base">Rasio Latihan</h4>
+              <p className="text-sm text-blue-800 leading-relaxed">
+                {programData.cardioRatio || '50% Kardio - 50% Beban'}
+              </p>
+            </div>
+
+            {/* Diet Recommendation */}
+            <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
+              <h4 className="font-semibold text-green-900 mb-3 text-base">Rekomendasi Diet</h4>
+              <p className="text-sm text-green-800 leading-relaxed">
+                {programData.dietRecommendation || 'Konsultasikan dengan ahli gizi untuk rekomendasi diet yang sesuai.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Program Description */}
+          {programData.description && (
+            <div className="mb-8">
+              <h4 className="font-semibold text-gray-900 mb-3 text-base border-b border-gray-300 pb-2">
+                Deskripsi Program
+              </h4>
+              <div className="bg-gray-50 p-6 rounded-lg">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {programData.description}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Important Notes */}
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg mb-8">
+            <h4 className="font-semibold text-yellow-900 mb-4 text-base">Catatan Penting & Guidelines Medis</h4>
+            
+            <div className="space-y-4">
+              {/* General Safety */}
+              <div>
+                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Keamanan Umum:</h5>
+                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                  <li>• Konsultasikan dengan dokter sebelum memulai program latihan</li>
+                  <li>• Lakukan pemanasan 5-10 menit sebelum latihan</li>
+                  <li>• Pendinginan 5-10 menit setelah latihan dengan stretching</li>
+                  <li>• Hentikan latihan jika merasakan nyeri dada, pusing, atau sesak napas</li>
+                </ul>
+              </div>
+
+              {/* Heart Rate Guidelines */}
+              <div>
+                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Panduan Heart Rate (Detak Jantung):</h5>
+                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                  <li>• <strong>Target Heart Rate:</strong> 50-85% dari Maximum Heart Rate (220 - umur)</li>
+                  <li>• <strong>Fat Burning Zone:</strong> 60-70% MHR untuk pembakaran lemak optimal</li>
+                  <li>• <strong>Cardio Zone:</strong> 70-85% MHR untuk peningkatan kardiovaskular</li>
+                  <li>• <strong>Recovery Zone:</strong> 50-60% MHR untuk active recovery</li>
+                  <li>• Gunakan heart rate monitor atau hitung manual: 15 detik × 4</li>
+                </ul>
+              </div>
+
+              {/* Weight Training Guidelines */}
+              <div>
+                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Panduan Beban Latihan:</h5>
+                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                  <li>• <strong>Pemula:</strong> Mulai dengan 40-60% dari 1RM (1 Rep Maximum)</li>
+                  <li>• <strong>Intermediate:</strong> 60-80% dari 1RM</li>
+                  <li>• <strong>Advanced:</strong> 80-95% dari 1RM</li>
+                  <li>• <strong>RPE Scale:</strong> Target intensitas 6-8 dari skala 1-10</li>
+                  <li>• Tingkatkan beban 2.5-5% setiap 1-2 minggu jika form tetap baik</li>
+                </ul>
+              </div>
+
+              {/* Progressive Overload */}
+              <div>
+                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Progressive Overload:</h5>
+                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                  <li>• Tingkatkan volume latihan secara bertahap (10% rule)</li>
+                  <li>• Fokus pada teknik yang benar sebelum menambah beban</li>
+                  <li>• Berikan waktu recovery 48-72 jam untuk muscle group yang sama</li>
+                  <li>• Variasi latihan setiap 4-6 minggu untuk menghindari plateau</li>
+                </ul>
+              </div>
+
+              {/* Hydration & Nutrition */}
+              <div>
+                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Hidrasi & Nutrisi:</h5>
+                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                  <li>• Minum 500-750ml air 2-3 jam sebelum latihan</li>
+                  <li>• Konsumsi 150-250ml setiap 15-20 menit selama latihan</li>
+                  <li>• Post-workout: 150% dari berat badan yang hilang</li>
+                  <li>• Pre-workout meal: 1-4 jam sebelum latihan (karbohidrat + protein)</li>
+                  <li>• Post-workout: Dalam 30-60 menit (protein + karbohidrat)</li>
+                </ul>
+              </div>
+
+              {/* Recovery & Sleep */}
+              <div>
+                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Recovery & Istirahat:</h5>
+                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                  <li>• Tidur 7-9 jam per malam untuk recovery optimal</li>
+                  <li>• Ambil rest day 1-2 hari per minggu</li>
+                  <li>• Active recovery: jalan santai, yoga, atau stretching ringan</li>
+                  <li>• Monitor tanda overtraining: kelelahan, penurunan performa, mood changes</li>
+                </ul>
+              </div>
+
+              {/* When to Stop */}
+              <div>
+                <h5 className="font-medium text-red-700 mb-2 text-sm">Hentikan Latihan Segera Jika:</h5>
+                <ul className="text-sm text-red-700 space-y-1 ml-4">
+                  <li>• Nyeri dada atau sesak napas berlebihan</li>
+                  <li>• Pusing, mual, atau kehilangan kesadaran</li>
+                  <li>• Nyeri sendi atau otot yang tajam</li>
+                  <li>• Heart rate tidak kembali normal setelah 5 menit recovery</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-yellow-200">
+              <p className="text-xs text-yellow-700 italic">
+                *Guidelines berdasarkan American College of Sports Medicine (ACSM), 
+                American Heart Association (AHA), dan WHO Physical Activity Guidelines.
+              </p>
+            </div>
+          </div>
+
+          {/* Footer for PDF */}
+          <div className="border-t-2 border-gray-200 pt-6 text-center">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">
+                Dokumen ini dihasilkan oleh Sistem Pakar Program Olahraga
+              </p>
+              <p className="text-xs text-gray-500">
+                Tanggal Cetak: {new Date().toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+              <p className="text-xs text-gray-500">
+                Konsultasikan dengan pelatih profesional untuk hasil optimal
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Additional Info - FROM DATABASE */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6">
-          {/* Cardio Ratio */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-2">Rasio Latihan</h3>
-            <p className="text-sm text-blue-800">
-              {programData.cardioRatio || '50% Kardio - 50% Beban'}
-            </p>
-          </div>
-
-          {/* Diet Recommendation */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="font-medium text-green-900 mb-2">Rekomendasi Diet</h3>
-            <p className="text-sm text-green-800">
-              {programData.dietRecommendation || 'Konsultasikan dengan ahli gizi untuk rekomendasi diet yang sesuai.'}
-            </p>
-          </div>
-        </div>
-
-        {/* Program Details from Database */}
-        {programData.description && (
-          <div className="bg-white rounded-lg shadow p-4 lg:p-6 mb-6">
-            <h3 className="font-medium text-gray-900 mb-2">Deskripsi Program</h3>
-            <p className="text-sm text-gray-600">{programData.description}</p>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        {/* Action Buttons - Outside PDF area */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <button
-            onClick={handleSaveConsultation}
-            disabled={saving}
-            className="flex-1 px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 text-center flex items-center justify-center"
+            onClick={handleDownloadPDF}
+            disabled={downloadingPDF}
+            className="flex-1 px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 text-center flex items-center justify-center font-medium"
           >
-            {saving ? (
+            {downloadingPDF ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Menyimpan...
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                Membuat PDF...
               </>
             ) : (
-              'Simpan Hasil Konsultasi'
+              <>
+                <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download PDF
+              </>
             )}
+          </button>
+
+          <button
+            onClick={() => navigate('/history')}
+            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 text-center flex items-center justify-center font-medium"
+          >
+            <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Lihat Riwayat
           </button>
           
           <button
             onClick={() => navigate('/consultation')}
-            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 text-center"
+            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200 text-center flex items-center justify-center font-medium"
           >
-            Ulangi Konsultasi
+            <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Konsultasi Ulang
           </button>
+        </div>
+
+        {/* Auto-Save Info */}
+        <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <svg className="h-5 w-5 text-green-600 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h3 className="text-sm font-medium text-green-900 mb-1">Hasil Tersimpan Otomatis</h3>
+              <p className="text-sm text-green-800">
+                Hasil konsultasi Anda sudah otomatis tersimpan ke database saat forward chaining dijalankan. 
+                Anda dapat mengdownload PDF untuk referensi offline atau melihat riwayat kapan saja.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Debug Info (only in development) */}
