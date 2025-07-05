@@ -84,14 +84,48 @@ export const apiService = {
     }
   },
 
-  // Exercises
+  // Exercises - FULL CRUD with YouTube integration
   exercises: {
+    // Public endpoints (for users)
     getAll: (params = {}) => api.get('/exercises', { params }),
-    getByCategory: (category) => api.get(`/exercises/category/${category}`),
     getById: (id) => api.get(`/exercises/${id}`),
-    create: (data) => api.post('/exercises', data),
-    update: (id, data) => api.put(`/exercises/${id}`, data),
-    delete: (id) => api.delete(`/exercises/${id}`)
+    getByCategory: (category) => api.get(`/exercises/category/${category}`),
+    search: (params = {}) => api.get('/exercises/search', { params }),
+    
+    // Admin endpoints (full CRUD)
+    admin: {
+      create: (data) => api.post('/exercises', data),
+      update: (id, data) => api.put(`/exercises/${id}`, data),
+      delete: (id) => api.delete(`/exercises/${id}`),
+      getStats: () => api.get('/exercises/stats'),
+      bulkCreate: (data) => api.post('/exercises/bulk', data),
+      validateYouTube: (url) => api.post('/exercises/validate-youtube', { url }),
+      
+      // Category management
+      getCategories: () => api.get('/exercises/categories'),
+      getMuscleGroups: () => api.get('/exercises/muscle-groups'),
+      getEquipment: () => api.get('/exercises/equipment'),
+      
+      // Analytics
+      getPopular: (params = {}) => api.get('/exercises/popular', { params }),
+      getRecentlyAdded: (params = {}) => api.get('/exercises/recent', { params }),
+      getWithoutVideos: (params = {}) => api.get('/exercises/no-videos', { params }),
+    }
+  },
+
+  // User preferences (for favorites, progress tracking, etc.)
+  userPreferences: {
+    getFavorites: () => api.get('/user/favorites'),
+    addFavorite: (exerciseId) => api.post('/user/favorites', { exerciseId }),
+    removeFavorite: (exerciseId) => api.delete(`/user/favorites/${exerciseId}`),
+    
+    // Workout history
+    getWorkoutHistory: (params = {}) => api.get('/user/workout-history', { params }),
+    logWorkout: (data) => api.post('/user/workout-history', data),
+    
+    // Progress tracking
+    getProgress: (exerciseId) => api.get(`/user/progress/${exerciseId}`),
+    updateProgress: (exerciseId, data) => api.post(`/user/progress/${exerciseId}`, data),
   }
 };
 

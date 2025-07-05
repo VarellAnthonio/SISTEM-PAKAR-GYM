@@ -11,7 +11,8 @@ import { Op } from 'sequelize';
 import authRoutes from './routes/authRoutes.js';
 import consultationRoutes from './routes/consultationRoutes.js';
 import programRoutes from './routes/programRoutes.js';
-import ruleRoutes from './routes/ruleRoutes.js'; // ← NEW: Rule routes
+import ruleRoutes from './routes/ruleRoutes.js';
+import exerciseRoutes from './routes/exerciseRoutes.js'; // NEW: Exercise routes
 
 // Load env vars
 dotenv.config();
@@ -31,7 +32,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/programs', programRoutes);
-app.use('/api/rules', ruleRoutes); // ← NEW: Rule management routes
+app.use('/api/rules', ruleRoutes);
+app.use('/api/exercises', exerciseRoutes); // NEW: Exercise management routes
 
 // Health check route with database info
 app.get('/api/health', async (req, res) => {
@@ -43,8 +45,8 @@ app.get('/api/health', async (req, res) => {
     const stats = {
       users: await User.count(),
       programs: await Program.count(),
-      exercises: await Exercise.count(),
-      rules: await Rule.count(), // ← Include rule count
+      exercises: await Exercise.count(), // NEW: Exercise count
+      rules: await Rule.count(),
       consultations: await Consultation.count()
     };
 
@@ -75,7 +77,8 @@ app.get('/api', (req, res) => {
       auth: '/api/auth/*',
       consultations: '/api/consultations/*',
       programs: '/api/programs/*',
-      rules: '/api/rules/*', // ← NEW: Rule endpoints
+      rules: '/api/rules/*',
+      exercises: '/api/exercises/*', // NEW: Exercise endpoints
       health: '/api/health',
       info: '/api'
     },
@@ -88,8 +91,9 @@ app.get('/api', (req, res) => {
       'Program Recommendations',
       'Consultation Management',
       'Program CRUD Operations',
-      'Rule Management System', // ← NEW: Rule management
-      'Real-time Forward Chaining Testing' // ← NEW: FC testing
+      'Rule Management System',
+      'Exercise Management with YouTube Integration', // NEW: Exercise feature
+      'Real-time Forward Chaining Testing'
     ]
   });
 });
@@ -121,19 +125,22 @@ app.use('*', (req, res) => {
       'GET /api/consultations/:id',
       'GET /api/programs',
       'GET /api/programs/:code',
-      'GET /api/rules', // ← NEW: Rule endpoints
-      'POST /api/rules',
+      'GET /api/rules',
       'PUT /api/rules/:id',
-      'DELETE /api/rules/:id',
-      'PATCH /api/rules/:id/toggle',
       'GET /api/rules/stats',
       'GET /api/rules/missing-combinations',
-      'POST /api/rules/test-forward-chaining'
+      'GET /api/exercises', // NEW: Exercise endpoints
+      'POST /api/exercises',
+      'GET /api/exercises/:id',
+      'PUT /api/exercises/:id',
+      'DELETE /api/exercises/:id',
+      'GET /api/exercises/category/:category',
+      'GET /api/exercises/stats'
     ]
   });
 });
 
-// Auto-seed admin function (updated)
+// Auto-seed admin function (updated with exercise info)
 const autoSeedAdmin = async () => {
   try {
     // Check if admin already exists
@@ -192,8 +199,8 @@ const startServer = async () => {
     const stats = {
       users: await User.count(),
       programs: await Program.count(),
-      exercises: await Exercise.count(),
-      rules: await Rule.count(), // ← Include rule count
+      exercises: await Exercise.count(), // NEW: Exercise count
+      rules: await Rule.count(),
       consultations: await Consultation.count()
     };
 
@@ -210,7 +217,8 @@ const startServer = async () => {
       console.log('  📝 Authentication: /api/auth/*');
       console.log('  🏋️ Consultations: /api/consultations/*');
       console.log('  📋 Programs: /api/programs/*');
-      console.log('  ⚙️ Rules: /api/rules/*'); // ← NEW: Rule endpoints
+      console.log('  ⚙️ Rules: /api/rules/*');
+      console.log('  💪 Exercises: /api/exercises/*'); // NEW: Exercise endpoints
       console.log('  📊 Health Check: /api/health');
       console.log('');
       
@@ -220,7 +228,7 @@ const startServer = async () => {
         console.log('   npm run seed');
       } else {
         console.log('✅ Database ready with seeded data');
-        console.log(`📋 Programs: ${stats.programs} | Rules: ${stats.rules} | Users: ${stats.users}`);
+        console.log(`📋 Programs: ${stats.programs} | Rules: ${stats.rules} | Users: ${stats.users} | Exercises: ${stats.exercises}`);
         console.log('🔑 Admin Login: admin@gymsporra.com / admin123');
         console.log('👤 Sample User: john@example.com / password123');
       }
@@ -231,6 +239,15 @@ const startServer = async () => {
         console.log('💡 Create rules via Admin Panel: /admin/rules');
       } else {
         console.log(`✅ Forward Chaining: ${stats.rules} rules active`);
+      }
+
+      // Exercise management info
+      if (stats.exercises === 0) {
+        console.log('⚠️  No exercises found in database!');
+        console.log('💡 Seed exercises with YouTube videos:');
+        console.log('   npm run seed:exercises');
+      } else {
+        console.log(`✅ Exercise Library: ${stats.exercises} exercises available`);
       }
     });
   } catch (error) {

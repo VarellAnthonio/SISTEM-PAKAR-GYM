@@ -48,7 +48,7 @@ export const loginValidator = [
     .notEmpty().withMessage('Password is required')
 ];
 
-// Consultation validators (Notes field removed)
+// Consultation validators
 export const consultationValidator = [
   body('weight')
     .notEmpty().withMessage('Weight is required')
@@ -70,49 +70,7 @@ export const updateConsultationValidator = [
     .isLength({ max: 500 }).withMessage('Notes must not exceed 500 characters')
 ];
 
-// Program validators
-export const programValidator = [
-  body('code')
-    .notEmpty().withMessage('Program code is required')
-    .isLength({ min: 2, max: 10 }).withMessage('Program code must be between 2 and 10 characters')
-    .matches(/^[A-Z0-9]+$/).withMessage('Program code must contain only uppercase letters and numbers'),
-  body('name')
-    .notEmpty().withMessage('Program name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Program name must be between 2 and 100 characters'),
-  body('description')
-    .optional()
-    .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
-  body('bmiCategory')
-    .notEmpty().withMessage('BMI category is required')
-    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
-  body('bodyFatCategory')
-    .notEmpty().withMessage('Body fat category is required')
-    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
-  body('cardioRatio')
-    .optional()
-    .isLength({ max: 50 }).withMessage('Cardio ratio must not exceed 50 characters'),
-  body('dietRecommendation')
-    .optional()
-    .isLength({ max: 1000 }).withMessage('Diet recommendation must not exceed 1000 characters'),
-  body('schedule')
-    .notEmpty().withMessage('Schedule is required')
-    .isObject().withMessage('Schedule must be an object')
-    .custom((value) => {
-      const requiredDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-      const providedDays = Object.keys(value);
-      const missingDays = requiredDays.filter(day => !providedDays.includes(day));
-      if (missingDays.length > 0) {
-        throw new Error(`Missing schedule for days: ${missingDays.join(', ')}`);
-      }
-      return true;
-    })
-];
-
-// Keep existing validators, just update program section:
-
-// REMOVED programValidator (no longer needed for creation)
-
-// Updated updateProgramValidator (more restrictive)
+// Program validators (EDIT ONLY - more restrictive)
 export const updateProgramValidator = [
   // CONTENT-ONLY fields allowed
   body('name')
@@ -176,72 +134,256 @@ export const updateProgramValidator = [
     })
 ];
 
-export const ruleValidator = [
-  body('name')
-    .notEmpty().withMessage('Rule name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Rule name must be between 2 and 100 characters'),
-  
-  body('description')
-    .optional()
-    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters'),
-  
-  body('bmiCategory')
-    .notEmpty().withMessage('BMI category is required')
-    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
-  
-  body('bodyFatCategory')
-    .notEmpty().withMessage('Body fat category is required')
-    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
-  
+// Rule validators (ASSIGNMENT ONLY)
+export const updateRuleValidator = [
   body('programId')
     .notEmpty().withMessage('Program ID is required')
     .isInt({ min: 1 }).withMessage('Program ID must be a valid integer'),
   
-  body('priority')
-    .optional()
-    .isInt({ min: 1 }).withMessage('Priority must be a positive integer'),
+  // Block modification of other fields
+  body('name')
+    .custom((value, { req }) => {
+      if (value !== undefined) {
+        throw new Error('Rule name cannot be modified');
+      }
+      return true;
+    }),
   
-  body('conditions')
+  body('bmiCategory')
+    .custom((value, { req }) => {
+      if (value !== undefined) {
+        throw new Error('BMI category cannot be modified');
+      }
+      return true;
+    }),
+  
+  body('bodyFatCategory')
+    .custom((value, { req }) => {
+      if (value !== undefined) {
+        throw new Error('Body fat category cannot be modified');
+      }
+      return true;
+    })
+];
+
+// Exercise validators (FULL CRUD)
+export const exerciseValidator = [
+  body('name')
+    .notEmpty().withMessage('Exercise name is required')
+    .isLength({ min: 2, max: 100 }).withMessage('Exercise name must be between 2 and 100 characters'),
+  
+  body('category')
+    .notEmpty().withMessage('Exercise category is required')
+    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
+  
+  body('description')
     .optional()
-    .isObject().withMessage('Conditions must be an object'),
+    .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
+  
+  body('instructions')
+    .optional()
+    .isLength({ max: 2000 }).withMessage('Instructions must not exceed 2000 characters'),
+  
+  body('sets')
+    .optional()
+    .isLength({ max: 50 }).withMessage('Sets must not exceed 50 characters'),
+  
+  body('duration')
+    .optional()
+    .isLength({ max: 50 }).withMessage('Duration must not exceed 50 characters'),
+  
+  body('difficulty')
+    .optional()
+    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
+  
+  body('youtubeUrl')
+    .optional()
+    .custom((value) => {
+      if (value && value.trim()) {
+        // YouTube URL validation
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+        if (!youtubeRegex.test(value)) {
+          throw new Error('Invalid YouTube URL format');
+        }
+      }
+      return true;
+    }),
+  
+  body('muscleGroups')
+    .optional()
+    .isArray().withMessage('Muscle groups must be an array')
+    .custom((value) => {
+      if (value && Array.isArray(value)) {
+        const validMuscleGroups = [
+          'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms',
+          'Abs', 'Obliques', 'Quadriceps', 'Hamstrings', 'Glutes', 'Calves',
+          'Upper Traps', 'Middle Traps', 'Lower Traps', 'Lats', 'Rhomboids',
+          'Rear Delts', 'Front Delts', 'Side Delts', 'Core'
+        ];
+        
+        const invalidGroups = value.filter(group => !validMuscleGroups.includes(group));
+        if (invalidGroups.length > 0) {
+          throw new Error(`Invalid muscle groups: ${invalidGroups.join(', ')}`);
+        }
+      }
+      return true;
+    }),
+  
+  body('equipment')
+    .optional()
+    .isArray().withMessage('Equipment must be an array')
+    .custom((value) => {
+      if (value && Array.isArray(value)) {
+        const validEquipment = [
+          'Barbell', 'Dumbbell', 'Kettlebell', 'Cable Machine', 'Pull-up Bar',
+          'Bench', 'Incline Bench', 'Decline Bench', 'Squat Rack', 'Leg Press Machine',
+          'Lat Pulldown Machine', 'Seated Row Machine', 'Leg Curl Machine',
+          'Leg Extension Machine', 'Calf Raise Machine', 'Smith Machine',
+          'Treadmill', 'Stationary Bike', 'Elliptical', 'Rowing Machine',
+          'Resistance Bands', 'Bodyweight', 'Medicine Ball', 'Stability Ball',
+          'TRX', 'Battle Ropes', 'Foam Roller', 'Yoga Mat'
+        ];
+        
+        const invalidEquipment = value.filter(equip => !validEquipment.includes(equip));
+        if (invalidEquipment.length > 0) {
+          throw new Error(`Invalid equipment: ${invalidEquipment.join(', ')}`);
+        }
+      }
+      return true;
+    }),
   
   body('isActive')
     .optional()
     .isBoolean().withMessage('isActive must be a boolean')
 ];
 
-export const updateRuleValidator = [
+export const updateExerciseValidator = [
   body('name')
     .optional()
-    .isLength({ min: 2, max: 100 }).withMessage('Rule name must be between 2 and 100 characters'),
+    .isLength({ min: 2, max: 100 }).withMessage('Exercise name must be between 2 and 100 characters'),
+  
+  body('category')
+    .optional()
+    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
   
   body('description')
     .optional()
-    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters'),
+    .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
   
-  body('bmiCategory')
+  body('instructions')
     .optional()
-    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
+    .isLength({ max: 2000 }).withMessage('Instructions must not exceed 2000 characters'),
   
-  body('bodyFatCategory')
+  body('sets')
     .optional()
-    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
+    .isLength({ max: 50 }).withMessage('Sets must not exceed 50 characters'),
   
-  body('programId')
+  body('duration')
     .optional()
-    .isInt({ min: 1 }).withMessage('Program ID must be a valid integer'),
+    .isLength({ max: 50 }).withMessage('Duration must not exceed 50 characters'),
   
-  body('priority')
+  body('difficulty')
     .optional()
-    .isInt({ min: 1 }).withMessage('Priority must be a positive integer'),
+    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
   
-  body('conditions')
+  body('youtubeUrl')
     .optional()
-    .isObject().withMessage('Conditions must be an object'),
+    .custom((value) => {
+      if (value && value.trim()) {
+        // YouTube URL validation
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+        if (!youtubeRegex.test(value)) {
+          throw new Error('Invalid YouTube URL format');
+        }
+      }
+      return true;
+    }),
+  
+  body('muscleGroups')
+    .optional()
+    .isArray().withMessage('Muscle groups must be an array'),
+  
+  body('equipment')
+    .optional()
+    .isArray().withMessage('Equipment must be an array'),
   
   body('isActive')
     .optional()
     .isBoolean().withMessage('isActive must be a boolean')
+];
+
+// YouTube URL validator (standalone)
+export const youtubeUrlValidator = [
+  body('url')
+    .notEmpty().withMessage('YouTube URL is required')
+    .custom((value) => {
+      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+      if (!youtubeRegex.test(value)) {
+        throw new Error('Invalid YouTube URL format');
+      }
+      return true;
+    })
+];
+
+// Bulk exercise validator
+export const bulkExerciseValidator = [
+  body('exercises')
+    .isArray({ min: 1 }).withMessage('Exercises must be an array with at least one exercise'),
+  
+  body('exercises.*.name')
+    .notEmpty().withMessage('Each exercise must have a name')
+    .isLength({ min: 2, max: 100 }).withMessage('Exercise name must be between 2 and 100 characters'),
+  
+  body('exercises.*.category')
+    .notEmpty().withMessage('Each exercise must have a category')
+    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
+  
+  body('exercises.*.difficulty')
+    .optional()
+    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
+  
+  body('exercises.*.youtubeUrl')
+    .optional()
+    .custom((value) => {
+      if (value && value.trim()) {
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+        if (!youtubeRegex.test(value)) {
+          throw new Error('Invalid YouTube URL format');
+        }
+      }
+      return true;
+    })
+];
+
+// Search validator
+export const searchValidator = [
+  body('query')
+    .optional()
+    .isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
+  
+  body('category')
+    .optional()
+    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid category'),
+  
+  body('difficulty')
+    .optional()
+    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty'),
+  
+  body('muscleGroup')
+    .optional()
+    .isString().withMessage('Muscle group must be a string'),
+  
+  body('hasVideo')
+    .optional()
+    .isBoolean().withMessage('hasVideo must be a boolean'),
+  
+  body('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+  
+  body('page')
+    .optional()
+    .isInt({ min: 1 }).withMessage('Page must be at least 1')
 ];
 
 // Forward chaining test validator
@@ -263,88 +405,74 @@ export const forwardChainingTestValidator = [
     .isIn(['male', 'female']).withMessage('Gender must be either male or female')
 ];
 
-// Bulk rules validator
-export const bulkRulesValidator = [
-  body('rules')
-    .isArray({ min: 1 }).withMessage('Rules must be an array with at least one rule'),
-  
-  body('rules.*.name')
-    .notEmpty().withMessage('Each rule must have a name')
-    .isLength({ min: 2, max: 100 }).withMessage('Rule name must be between 2 and 100 characters'),
-  
-  body('rules.*.bmiCategory')
-    .notEmpty().withMessage('Each rule must have a BMI category')
-    .isIn(['B1', 'B2', 'B3', 'B4']).withMessage('Invalid BMI category'),
-  
-  body('rules.*.bodyFatCategory')
-    .notEmpty().withMessage('Each rule must have a body fat category')
-    .isIn(['L1', 'L2', 'L3']).withMessage('Invalid body fat category'),
-  
-  body('rules.*.programId')
-    .notEmpty().withMessage('Each rule must have a program ID')
-    .isInt({ min: 1 }).withMessage('Program ID must be a valid integer')
+// User preferences validators
+export const favoriteValidator = [
+  body('exerciseId')
+    .notEmpty().withMessage('Exercise ID is required')
+    .isInt({ min: 1 }).withMessage('Exercise ID must be a valid integer')
 ];
 
-// Exercise validators (for future use)
-export const exerciseValidator = [
-  body('name')
-    .notEmpty().withMessage('Exercise name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Exercise name must be between 2 and 100 characters'),
-  body('category')
-    .notEmpty().withMessage('Exercise category is required')
-    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
-  body('description')
-    .optional()
-    .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
-  body('instructions')
-    .optional()
-    .isLength({ max: 2000 }).withMessage('Instructions must not exceed 2000 characters'),
+export const workoutLogValidator = [
+  body('exerciseId')
+    .notEmpty().withMessage('Exercise ID is required')
+    .isInt({ min: 1 }).withMessage('Exercise ID must be a valid integer'),
+  
   body('sets')
     .optional()
-    .isLength({ max: 20 }).withMessage('Sets must not exceed 20 characters'),
+    .isInt({ min: 1 }).withMessage('Sets must be at least 1'),
+  
+  body('reps')
+    .optional()
+    .isInt({ min: 1 }).withMessage('Reps must be at least 1'),
+  
+  body('weight')
+    .optional()
+    .isFloat({ min: 0 }).withMessage('Weight must be a positive number'),
+  
   body('duration')
     .optional()
-    .isLength({ max: 20 }).withMessage('Duration must not exceed 20 characters'),
-  body('difficulty')
+    .isInt({ min: 1 }).withMessage('Duration must be at least 1 second'),
+  
+  body('notes')
     .optional()
-    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
-  body('muscleGroups')
-    .optional()
-    .isArray().withMessage('Muscle groups must be an array'),
-  body('equipment')
-    .optional()
-    .isArray().withMessage('Equipment must be an array')
+    .isLength({ max: 500 }).withMessage('Notes must not exceed 500 characters')
 ];
 
-export const updateExerciseValidator = [
-  body('name')
+export const progressValidator = [
+  body('exerciseId')
+    .notEmpty().withMessage('Exercise ID is required')
+    .isInt({ min: 1 }).withMessage('Exercise ID must be a valid integer'),
+  
+  body('personalRecord')
     .optional()
-    .isLength({ min: 2, max: 100 }).withMessage('Exercise name must be between 2 and 100 characters'),
-  body('category')
+    .isObject().withMessage('Personal record must be an object'),
+  
+  body('notes')
     .optional()
-    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
-  body('description')
-    .optional()
-    .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
-  body('instructions')
-    .optional()
-    .isLength({ max: 2000 }).withMessage('Instructions must not exceed 2000 characters'),
-  body('sets')
-    .optional()
-    .isLength({ max: 20 }).withMessage('Sets must not exceed 20 characters'),
-  body('duration')
-    .optional()
-    .isLength({ max: 20 }).withMessage('Duration must not exceed 20 characters'),
-  body('difficulty')
-    .optional()
-    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
-  body('muscleGroups')
-    .optional()
-    .isArray().withMessage('Muscle groups must be an array'),
-  body('equipment')
-    .optional()
-    .isArray().withMessage('Equipment must be an array'),
-  body('isActive')
-    .optional()
-    .isBoolean().withMessage('isActive must be a boolean')
+    .isLength({ max: 1000 }).withMessage('Notes must not exceed 1000 characters')
 ];
+
+// Utility functions for validation
+export const sanitizeYouTubeUrl = (url) => {
+  if (!url) return null;
+  
+  // Extract video ID and create clean URL
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (match) {
+    return `https://www.youtube.com/watch?v=${match[1]}`;
+  }
+  
+  return url;
+};
+
+export const extractYouTubeVideoId = (url) => {
+  if (!url) return null;
+  
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+};
+
+export const validateYouTubeUrl = (url) => {
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+  return youtubeRegex.test(url);
+};
