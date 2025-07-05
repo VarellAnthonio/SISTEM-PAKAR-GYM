@@ -30,7 +30,7 @@ const Exercises = () => {
   
   // Pagination for display (client-side)
   const [currentPage, setCurrentPage] = useState(1);
-  const [exercisesPerPage] = useState(16); // Show more per page
+  const [exercisesPerPage] = useState(9); // Show more per page
   
   const [favorites, setFavorites] = useState(new Set());
   const [stats, setStats] = useState({
