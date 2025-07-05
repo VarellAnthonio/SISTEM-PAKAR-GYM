@@ -1,3 +1,4 @@
+// frontend/src/services/api.js - COMPLETE VERSION
 import axios from 'axios';
 
 const api = axios.create({
@@ -90,14 +91,35 @@ export const apiService = {
     getAll: (params = {}) => api.get('/exercises', { params }),
     getById: (id) => api.get(`/exercises/${id}`),
     getByCategory: (category) => api.get(`/exercises/category/${category}`),
-    search: (params = {}) => api.get('/exercises/search', { params }),
+    getCategories: () => api.get('/exercises/categories'),
+    search: (params = {}) => api.get('/exercises', { params }), // Same as getAll with search params
     
     // Admin endpoints (full CRUD)
+    create: (data) => api.post('/exercises', data),
+    update: (id, data) => api.put(`/exercises/${id}`, data),
+    delete: (id) => api.delete(`/exercises/${id}`),
+    toggleStatus: (id) => api.patch(`/exercises/${id}/toggle`),
+    
+    // Admin statistics and management
+    getStats: () => api.get('/exercises/admin/stats'),
+    bulkCreate: (data) => api.post('/exercises/bulk', data),
+    validateYouTube: (url) => api.post('/exercises/validate-youtube', { url }),
+    
+    // Category and metadata management
+    getMuscleGroups: () => api.get('/exercises/muscle-groups'),
+    getEquipment: () => api.get('/exercises/equipment'),
+    
+    // Analytics endpoints
+    getPopular: (params = {}) => api.get('/exercises/popular', { params }),
+    getRecentlyAdded: (params = {}) => api.get('/exercises/recent', { params }),
+    getWithoutVideos: (params = {}) => api.get('/exercises/no-videos', { params }),
+    
+    // Admin-only endpoints (alternative structure)
     admin: {
       create: (data) => api.post('/exercises', data),
       update: (id, data) => api.put(`/exercises/${id}`, data),
       delete: (id) => api.delete(`/exercises/${id}`),
-      getStats: () => api.get('/exercises/stats'),
+      getStats: () => api.get('/exercises/admin/stats'),
       bulkCreate: (data) => api.post('/exercises/bulk', data),
       validateYouTube: (url) => api.post('/exercises/validate-youtube', { url }),
       
@@ -126,6 +148,59 @@ export const apiService = {
     // Progress tracking
     getProgress: (exerciseId) => api.get(`/user/progress/${exerciseId}`),
     updateProgress: (exerciseId, data) => api.post(`/user/progress/${exerciseId}`, data),
+  },
+
+  // Users management (Admin only)
+  users: {
+    getAll: (params = {}) => api.get('/users', { params }),
+    getById: (id) => api.get(`/users/${id}`),
+    update: (id, data) => api.put(`/users/${id}`, data),
+    delete: (id) => api.delete(`/users/${id}`),
+    toggleStatus: (id) => api.patch(`/users/${id}/toggle`),
+    getStats: () => api.get('/users/stats'),
+    
+    // User management
+    resetPassword: (id) => api.post(`/users/${id}/reset-password`),
+    changeRole: (id, role) => api.patch(`/users/${id}/role`, { role }),
+  },
+
+  // System utilities
+  system: {
+    getHealth: () => api.get('/health'),
+    getStats: () => api.get('/stats'),
+    getDatabaseStatus: () => api.get('/database/status'),
+    runMigrations: () => api.post('/database/migrate'),
+    seedDatabase: () => api.post('/database/seed'),
+    
+    // Backup and restore
+    exportData: () => api.get('/export'),
+    importData: (data) => api.post('/import', data),
+  },
+
+  // File upload utilities (if needed)
+  files: {
+    upload: (file, type = 'general') => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      
+      return api.post('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    },
+    
+    delete: (filename) => api.delete(`/files/${filename}`),
+    getUrl: (filename) => `${api.defaults.baseURL}/files/${filename}`,
+  },
+
+  // Forward chaining testing (if needed)
+  forwardChaining: {
+    test: (data) => api.post('/forward-chaining/test', data),
+    validate: (conditions) => api.post('/forward-chaining/validate', conditions),
+    getRules: () => api.get('/forward-chaining/rules'),
+    getPrograms: () => api.get('/forward-chaining/programs'),
   }
 };
 

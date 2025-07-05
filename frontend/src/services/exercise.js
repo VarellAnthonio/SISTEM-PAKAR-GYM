@@ -1,20 +1,39 @@
-// frontend/src/services/exercise.js
+// frontend/src/services/exercise.js - COMPLETE VERSION
 import { apiService } from './api';
 
 export const exerciseService = {
   // Get all exercises with filtering and pagination
   getAll: async (params = {}) => {
     try {
+      console.log('🔄 Exercise service getAll called with params:', params);
       const response = await apiService.exercises.getAll(params);
+      console.log('📥 Exercise API response:', response);
+      
       return {
         success: true,
-        data: response.data.data
+        data: response.data.data || response.data
       };
     } catch (error) {
+      console.error('❌ Exercise getAll error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
       const message = error.response?.data?.message || 'Failed to get exercises';
       return {
         success: false,
-        message
+        message,
+        data: { 
+          exercises: [], 
+          pagination: { 
+            total: 0, 
+            page: 1, 
+            totalPages: 0,
+            limit: params.limit || 10
+          } 
+        }
       };
     }
   },
@@ -22,16 +41,19 @@ export const exerciseService = {
   // Get exercises by category
   getByCategory: async (category) => {
     try {
+      console.log('🔄 Getting exercises by category:', category);
       const response = await apiService.exercises.getByCategory(category);
       return {
         success: true,
-        data: response.data.data
+        data: response.data.data || response.data
       };
     } catch (error) {
+      console.error('❌ Exercise getByCategory error:', error);
       const message = error.response?.data?.message || 'Failed to get exercises by category';
       return {
         success: false,
-        message
+        message,
+        data: []
       };
     }
   },
@@ -42,9 +64,10 @@ export const exerciseService = {
       const response = await apiService.exercises.getById(id);
       return {
         success: true,
-        data: response.data.data
+        data: response.data.data || response.data
       };
     } catch (error) {
+      console.error('❌ Exercise getById error:', error);
       const message = error.response?.data?.message || 'Failed to get exercise';
       return {
         success: false,
@@ -59,13 +82,21 @@ export const exerciseService = {
       const response = await apiService.exercises.getCategories();
       return {
         success: true,
-        data: response.data.data
+        data: response.data.data || response.data
       };
     } catch (error) {
+      console.error('❌ Exercise getCategories error:', error);
       const message = error.response?.data?.message || 'Failed to get categories';
       return {
         success: false,
-        message
+        message,
+        data: [
+          { name: 'Push', count: 0, color: 'bg-red-100 text-red-800' },
+          { name: 'Pull', count: 0, color: 'bg-blue-100 text-blue-800' },
+          { name: 'Leg', count: 0, color: 'bg-green-100 text-green-800' },
+          { name: 'Full Body', count: 0, color: 'bg-purple-100 text-purple-800' },
+          { name: 'Cardio', count: 0, color: 'bg-orange-100 text-orange-800' }
+        ]
       };
     }
   },
@@ -77,16 +108,127 @@ export const exerciseService = {
         search: searchTerm,
         ...filters
       };
-      const response = await apiService.exercises.getAll(params);
+      const response = await apiService.exercises.search(params);
       return {
         success: true,
-        data: response.data.data
+        data: response.data.data || response.data
       };
     } catch (error) {
+      console.error('❌ Exercise search error:', error);
       const message = error.response?.data?.message || 'Failed to search exercises';
       return {
         success: false,
         message
+      };
+    }
+  },
+
+  // Create new exercise (admin)
+  create: async (exerciseData) => {
+    try {
+      console.log('🔄 Creating exercise:', exerciseData);
+      const response = await apiService.exercises.create(exerciseData);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('❌ Exercise create error:', error);
+      const message = error.response?.data?.message || 'Failed to create exercise';
+      const errors = error.response?.data?.errors || [];
+      return {
+        success: false,
+        message,
+        errors
+      };
+    }
+  },
+
+  // Update exercise (admin)
+  update: async (id, exerciseData) => {
+    try {
+      console.log('🔄 Updating exercise:', id, exerciseData);
+      const response = await apiService.exercises.update(id, exerciseData);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('❌ Exercise update error:', error);
+      const message = error.response?.data?.message || 'Failed to update exercise';
+      const errors = error.response?.data?.errors || [];
+      return {
+        success: false,
+        message,
+        errors
+      };
+    }
+  },
+
+  // Delete exercise (admin)
+  delete: async (id) => {
+    try {
+      console.log('🔄 Deleting exercise:', id);
+      const response = await apiService.exercises.delete(id);
+      return {
+        success: true,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('❌ Exercise delete error:', error);
+      const message = error.response?.data?.message || 'Failed to delete exercise';
+      return {
+        success: false,
+        message
+      };
+    }
+  },
+
+  // Toggle exercise status (admin)
+  toggleStatus: async (id) => {
+    try {
+      const response = await apiService.exercises.toggleStatus(id);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('❌ Exercise toggleStatus error:', error);
+      const message = error.response?.data?.message || 'Failed to toggle exercise status';
+      return {
+        success: false,
+        message
+      };
+    }
+  },
+
+  // Get exercise statistics (admin)
+  getStats: async () => {
+    try {
+      const response = await apiService.exercises.getStats();
+      return {
+        success: true,
+        data: response.data.data || response.data
+      };
+    } catch (error) {
+      console.error('❌ Exercise getStats error:', error);
+      const message = error.response?.data?.message || 'Failed to get exercise statistics';
+      return {
+        success: false,
+        message,
+        data: {
+          total: 0,
+          active: 0,
+          inactive: 0,
+          withVideo: 0,
+          withoutVideo: 0,
+          videoPercentage: 0,
+          categoryStats: [],
+          difficultyStats: []
+        }
       };
     }
   },
@@ -96,7 +238,7 @@ export const exerciseService = {
     // Get exercise statistics
     getStats: async () => {
       try {
-        const response = await apiService.exercises.getStats();
+        const response = await apiService.exercises.admin.getStats();
         return {
           success: true,
           data: response.data.data
@@ -113,7 +255,7 @@ export const exerciseService = {
     // Create new exercise
     create: async (exerciseData) => {
       try {
-        const response = await apiService.exercises.create(exerciseData);
+        const response = await apiService.exercises.admin.create(exerciseData);
         return {
           success: true,
           data: response.data.data,
@@ -133,7 +275,7 @@ export const exerciseService = {
     // Update exercise
     update: async (id, exerciseData) => {
       try {
-        const response = await apiService.exercises.update(id, exerciseData);
+        const response = await apiService.exercises.admin.update(id, exerciseData);
         return {
           success: true,
           data: response.data.data,
@@ -153,7 +295,7 @@ export const exerciseService = {
     // Delete exercise
     delete: async (id) => {
       try {
-        const response = await apiService.exercises.delete(id);
+        const response = await apiService.exercises.admin.delete(id);
         return {
           success: true,
           message: response.data.message
@@ -167,17 +309,16 @@ export const exerciseService = {
       }
     },
 
-    // Toggle exercise status
-    toggleStatus: async (id) => {
+    // Validate YouTube URL
+    validateYouTube: async (url) => {
       try {
-        const response = await apiService.exercises.toggleStatus(id);
+        const response = await apiService.exercises.admin.validateYouTube(url);
         return {
           success: true,
-          data: response.data.data,
-          message: response.data.message
+          data: response.data.data
         };
       } catch (error) {
-        const message = error.response?.data?.message || 'Failed to toggle exercise status';
+        const message = error.response?.data?.message || 'Failed to validate YouTube URL';
         return {
           success: false,
           message
@@ -186,18 +327,56 @@ export const exerciseService = {
     }
   },
 
-  // Utility methods
+  // Utility methods - WORKING VERSION
   utils: {
+    // Extract YouTube video ID from URL - ROBUST VERSION
+    extractVideoId: (url) => {
+      if (!url || typeof url !== 'string') {
+        console.warn('Invalid YouTube URL provided:', url);
+        return null;
+      }
+      
+      try {
+        // Multiple YouTube URL patterns
+        const patterns = [
+          // Standard watch URL
+          /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+          // Short URL
+          /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+          // Embed URL
+          /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+          // V URL
+          /(?:youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+          // Watch URL with additional parameters
+          /(?:youtube\.com\/watch\?.*v=)([a-zA-Z0-9_-]{11})/
+        ];
+        
+        for (const pattern of patterns) {
+          const match = url.match(pattern);
+          if (match && match[1]) {
+            console.log('✅ Video ID extracted:', match[1], 'from URL:', url);
+            return match[1];
+          }
+        }
+        
+        console.warn('❌ Could not extract video ID from URL:', url);
+        return null;
+      } catch (error) {
+        console.error('❌ Error extracting video ID:', error);
+        return null;
+      }
+    },
+
     // Get category display color
     getCategoryColor: (category) => {
       const colors = {
-        'Push': 'bg-red-100 text-red-800',
-        'Pull': 'bg-blue-100 text-blue-800',
-        'Leg': 'bg-green-100 text-green-800',
-        'Full Body': 'bg-purple-100 text-purple-800',
-        'Cardio': 'bg-orange-100 text-orange-800'
+        'Push': 'bg-red-100 text-red-800 border-red-200',
+        'Pull': 'bg-blue-100 text-blue-800 border-blue-200',
+        'Leg': 'bg-green-100 text-green-800 border-green-200',
+        'Full Body': 'bg-purple-100 text-purple-800 border-purple-200',
+        'Cardio': 'bg-orange-100 text-orange-800 border-orange-200'
       };
-      return colors[category] || 'bg-gray-100 text-gray-800';
+      return colors[category] || 'bg-gray-100 text-gray-800 border-gray-200';
     },
 
     // Get difficulty display color
@@ -208,23 +387,6 @@ export const exerciseService = {
         'Advanced': 'bg-red-100 text-red-800'
       };
       return colors[difficulty] || 'bg-gray-100 text-gray-800';
-    },
-
-    // Extract YouTube video ID from URL
-    extractYouTubeId: (url) => {
-      if (!url) return null;
-      
-      const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
-      ];
-      
-      for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) return match[1];
-      }
-      
-      return null;
     },
 
     // Generate YouTube embed URL
@@ -248,7 +410,9 @@ export const exerciseService = {
     // Generate YouTube thumbnail URL
     generateThumbnailUrl: (videoId, quality = 'hqdefault') => {
       if (!videoId) return null;
-      return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
+      const validQualities = ['default', 'mqdefault', 'hqdefault', 'sddefault', 'maxresdefault'];
+      const thumbnailQuality = validQualities.includes(quality) ? quality : 'hqdefault';
+      return `https://img.youtube.com/vi/${videoId}/${thumbnailQuality}.jpg`;
     },
 
     // Validate YouTube URL
@@ -261,7 +425,7 @@ export const exerciseService = {
     processExerciseData: (exercise) => {
       if (!exercise) return null;
       
-      const videoId = exercise.youtubeVideoId || this.extractYouTubeId(exercise.youtubeUrl);
+      const videoId = exercise.youtubeVideoId || this.extractVideoId(exercise.youtubeUrl);
       
       return {
         ...exercise,
@@ -278,12 +442,12 @@ export const exerciseService = {
     filterExercises: (exercises, filters) => {
       return exercises.filter(exercise => {
         // Category filter
-        if (filters.category && exercise.category !== filters.category) {
+        if (filters.category && filters.category !== 'All' && exercise.category !== filters.category) {
           return false;
         }
         
         // Difficulty filter
-        if (filters.difficulty && exercise.difficulty !== filters.difficulty) {
+        if (filters.difficulty && filters.difficulty !== 'All' && exercise.difficulty !== filters.difficulty) {
           return false;
         }
         
@@ -311,42 +475,6 @@ export const exerciseService = {
         }
         
         return true;
-      });
-    },
-
-    // Sort exercises by different criteria
-    sortExercises: (exercises, sortBy = 'name', order = 'asc') => {
-      return [...exercises].sort((a, b) => {
-        let valueA, valueB;
-        
-        switch (sortBy) {
-          case 'name':
-            valueA = a.name?.toLowerCase() || '';
-            valueB = b.name?.toLowerCase() || '';
-            break;
-          case 'category':
-            valueA = a.category || '';
-            valueB = b.category || '';
-            break;
-          case 'difficulty':
-            const difficultyOrder = { 'Beginner': 1, 'Intermediate': 2, 'Advanced': 3 };
-            valueA = difficultyOrder[a.difficulty] || 0;
-            valueB = difficultyOrder[b.difficulty] || 0;
-            break;
-          case 'createdAt':
-            valueA = new Date(a.createdAt || 0);
-            valueB = new Date(b.createdAt || 0);
-            break;
-          default:
-            valueA = a[sortBy] || '';
-            valueB = b[sortBy] || '';
-        }
-        
-        if (order === 'desc') {
-          return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-        } else {
-          return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-        }
       });
     },
 
