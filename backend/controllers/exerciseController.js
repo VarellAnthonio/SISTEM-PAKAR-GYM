@@ -1,4 +1,4 @@
-// backend/controllers/exerciseController.js
+// backend/controllers/exerciseController.js - FIXED VERSION
 import { Exercise } from '../models/index.js';
 import { Op } from 'sequelize';
 import { validateYouTubeUrl, extractVideoId, getVideoInfo } from '../utils/youtubeHelper.js';
@@ -138,7 +138,8 @@ export const createExercise = async (req, res) => {
       difficulty,
       youtubeUrl,
       muscleGroups,
-      equipment
+      equipment,
+      tags
     } = req.body;
 
     // Validate YouTube URL if provided
@@ -154,13 +155,18 @@ export const createExercise = async (req, res) => {
       // Try to get video info to verify URL works
       try {
         const videoId = extractVideoId(youtubeUrl);
-        const videoInfo = await getVideoInfo(videoId);
-        
-        if (!videoInfo) {
+        if (!videoId) {
           return res.status(400).json({
             success: false,
-            message: 'YouTube video not found or unavailable'
+            message: 'Could not extract video ID from YouTube URL'
           });
+        }
+
+        // Optional: Try to get video info
+        const videoInfo = await getVideoInfo(videoId);
+        if (!videoInfo) {
+          console.warn('YouTube video validation warning: Could not verify video availability');
+          // Continue with creation but log warning
         }
       } catch (error) {
         console.warn('YouTube video validation warning:', error.message);
@@ -179,7 +185,9 @@ export const createExercise = async (req, res) => {
       youtubeUrl,
       muscleGroups: muscleGroups || [],
       equipment: equipment || [],
-      isActive: true
+      tags: tags || [],
+      isActive: true,
+      createdBy: req.user?.id
     });
 
     res.status(201).json({
@@ -241,13 +249,18 @@ export const updateExercise = async (req, res) => {
       // Try to get video info to verify URL works
       try {
         const videoId = extractVideoId(updateData.youtubeUrl);
-        const videoInfo = await getVideoInfo(videoId);
-        
-        if (!videoInfo) {
+        if (!videoId) {
           return res.status(400).json({
             success: false,
-            message: 'YouTube video not found or unavailable'
+            message: 'Could not extract video ID from YouTube URL'
           });
+        }
+
+        // Optional: Try to get video info
+        const videoInfo = await getVideoInfo(videoId);
+        if (!videoInfo) {
+          console.warn('YouTube video validation warning: Could not verify video availability');
+          // Continue with update but log warning
         }
       } catch (error) {
         console.warn('YouTube video validation warning:', error.message);

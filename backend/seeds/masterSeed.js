@@ -8,7 +8,7 @@ dotenv.config();
 
 const masterSeed = async () => {
   try {
-    console.log('🚀 Starting complete database seeding with P1-P10 + 10 Realistic Rules...\n');
+    console.log('🚀 Starting complete database seeding with P1-P10 + 10 Realistic Rules + Exercises...\n');
 
     // Test database connection
     console.log('🔌 Testing database connection...');
@@ -69,7 +69,6 @@ const masterSeed = async () => {
     });
     console.log(`✅ Created ${sampleUsers.length} sample users\n`);
 
-    // Create complete programs P1-P10 (keep existing program data)
     console.log('🏋️ Creating complete programs P1-P10...');
     const programsData = [
       {
@@ -253,12 +252,375 @@ const masterSeed = async () => {
         }
       }
     ];
-
     const programs = await Program.bulkCreate(programsData);
     console.log(`✅ Created ${programs.length} programs (P1-P10)`);
 
+    // ===================================================================
+    // 💪 EXERCISE DATA - MASUKKAN DATA ANDA DI SINI  
+    // ===================================================================
+    console.log('\n💪 Creating exercises...');
+    const exercisesData = [
+     {
+        name: 'Push-ups',
+        category: 'Push',
+        description: 'Classic bodyweight exercise targeting chest, shoulders, and triceps',
+        instructions: '1. Start in plank position with hands shoulder-width apart\n2. Lower your body until chest nearly touches floor\n3. Push back up to starting position\n4. Keep body straight throughout movement',
+        sets: '3×8-15',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=IODxDxX7oi4',
+        muscleGroups: ['Chest', 'Shoulders', 'Triceps', 'Core'],
+        equipment: ['Bodyweight'],
+        tags: ['bodyweight', 'push', 'chest', 'beginner'],
+        isActive: true
+      },
+      {
+        name: 'Bench Press',
+        category: 'Push',
+        description: 'Fundamental compound exercise for upper body strength',
+        instructions: '1. Lie flat on bench with eyes under barbell\n2. Grip bar slightly wider than shoulder width\n3. Lower bar to chest with control\n4. Press bar back to starting position',
+        sets: '3×6-8',
+        difficulty: 'Intermediate',
+        youtubeUrl: 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
+        muscleGroups: ['Chest', 'Shoulders', 'Triceps'],
+        equipment: ['Barbell', 'Bench'],
+        tags: ['compound', 'strength', 'chest', 'barbell'],
+        isActive: true
+      },
+      {
+        name: 'Shoulder Press',
+        category: 'Push',
+        description: 'Overhead pressing movement for shoulder development',
+        instructions: '1. Stand with feet shoulder-width apart\n2. Hold dumbbells at shoulder height\n3. Press weights overhead until arms are straight\n4. Lower with control to starting position',
+        sets: '3×8-12',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=qEwKCR5JCog',
+        muscleGroups: ['Shoulders', 'Triceps', 'Core'],
+        equipment: ['Dumbbells'],
+        tags: ['shoulders', 'overhead', 'dumbbell', 'strength'],
+        isActive: true
+      },
+      {
+        name: 'Dips',
+        category: 'Push',
+        description: 'Bodyweight exercise for triceps and chest development',
+        instructions: '1. Support yourself on parallel bars or bench\n2. Lower body by bending elbows\n3. Lower until shoulders are below elbows\n4. Push back up to starting position',
+        sets: '3×6-12',
+        difficulty: 'Intermediate',
+        youtubeUrl: 'https://www.youtube.com/watch?v=2z8JmcrW-As',
+        muscleGroups: ['Triceps', 'Chest', 'Shoulders'],
+        equipment: ['Parallel Bars', 'Bench'],
+        tags: ['bodyweight', 'triceps', 'chest', 'intermediate'],
+        isActive: true
+      },
+
+      // PULL EXERCISES
+      {
+        name: 'Pull-ups',
+        category: 'Pull',
+        description: 'Upper body compound exercise targeting back and biceps',
+        instructions: '1. Hang from pull-up bar with overhand grip\n2. Pull body up until chin clears bar\n3. Lower with control to full arm extension\n4. Maintain tight core throughout',
+        sets: '3×5-10',
+        difficulty: 'Advanced',
+        youtubeUrl: 'https://www.youtube.com/watch?v=eGo4IYlbE5g',
+        muscleGroups: ['Lats', 'Rhomboids', 'Biceps', 'Core'],
+        equipment: ['Pull-up Bar'],
+        tags: ['bodyweight', 'back', 'biceps', 'advanced'],
+        isActive: true
+      },
+      {
+        name: 'Bent-over Rows',
+        category: 'Pull',
+        description: 'Compound pulling exercise for back development',
+        instructions: '1. Bend over at hips with slight knee bend\n2. Hold barbell with overhand grip\n3. Pull bar to lower chest/upper abdomen\n4. Lower with control to starting position',
+        sets: '3×6-10',
+        difficulty: 'Intermediate',
+        youtubeUrl: 'https://www.youtube.com/watch?v=FWJR5Ve8bnQ',
+        muscleGroups: ['Lats', 'Rhomboids', 'Middle Traps', 'Biceps'],
+        equipment: ['Barbell'],
+        tags: ['compound', 'back', 'rowing', 'strength'],
+        isActive: true
+      },
+      {
+        name: 'Lat Pulldowns',
+        category: 'Pull',
+        description: 'Machine exercise targeting latissimus dorsi',
+        instructions: '1. Sit at lat pulldown machine with thighs secured\n2. Grip bar wider than shoulders\n3. Pull bar down to upper chest\n4. Control weight back to starting position',
+        sets: '3×8-12',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+        muscleGroups: ['Lats', 'Rhomboids', 'Biceps'],
+        equipment: ['Lat Pulldown Machine'],
+        tags: ['machine', 'back', 'lats', 'beginner'],
+        isActive: true
+      },
+      {
+        name: 'Bicep Curls',
+        category: 'Pull',
+        description: 'Isolation exercise for bicep development',
+        instructions: '1. Stand with dumbbells at sides\n2. Keep elbows stationary at sides\n3. Curl weights up to shoulders\n4. Lower with control to starting position',
+        sets: '3×10-15',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo',
+        muscleGroups: ['Biceps'],
+        equipment: ['Dumbbells'],
+        tags: ['isolation', 'biceps', 'arms', 'dumbbell'],
+        isActive: true
+      },
+
+      // LEG EXERCISES
+      {
+        name: 'Squats',
+        category: 'Leg',
+        description: 'Fundamental compound exercise for lower body strength',
+        instructions: '1. Stand with feet shoulder-width apart\n2. Lower by pushing hips back and bending knees\n3. Descend until thighs parallel to floor\n4. Drive through heels to return to standing',
+        sets: '3×8-12',
+        difficulty: 'Intermediate',
+        youtubeUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+        muscleGroups: ['Quadriceps', 'Glutes', 'Hamstrings', 'Core'],
+        equipment: ['Barbell', 'Squat Rack'],
+        tags: ['compound', 'legs', 'strength', 'functional'],
+        isActive: true
+      },
+      {
+        name: 'Lunges',
+        category: 'Leg',
+        description: 'Unilateral leg exercise for strength and balance',
+        instructions: '1. Step forward into lunge position\n2. Lower back knee toward ground\n3. Keep front knee over ankle\n4. Push back to starting position',
+        sets: '3×10-12 each leg',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=QOVaHwm-Q6U',
+        muscleGroups: ['Quadriceps', 'Glutes', 'Hamstrings', 'Calves'],
+        equipment: ['Bodyweight', 'Optional Dumbbells'],
+        tags: ['unilateral', 'legs', 'balance', 'functional'],
+        isActive: true
+      },
+      {
+        name: 'Deadlifts',
+        category: 'Leg',
+        description: 'Compound exercise targeting posterior chain',
+        instructions: '1. Stand with feet hip-width apart\n2. Bend at hips and knees to grip bar\n3. Keep back straight and lift bar by extending hips\n4. Lower bar with control to starting position',
+        sets: '3×5-8',
+        difficulty: 'Advanced',
+        youtubeUrl: 'https://www.youtube.com/watch?v=op9kVnSso6Q',
+        muscleGroups: ['Hamstrings', 'Glutes', 'Lower Back', 'Traps'],
+        equipment: ['Barbell', 'Weight Plates'],
+        tags: ['compound', 'posterior-chain', 'strength', 'deadlift'],
+        isActive: true
+      },
+      {
+        name: 'Calf Raises',
+        category: 'Leg',
+        description: 'Isolation exercise for calf development',
+        instructions: '1. Stand on balls of feet on raised surface\n2. Lower heels below platform level\n3. Rise up on toes as high as possible\n4. Lower with control and repeat',
+        sets: '3×12-20',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=gwLzBJYoWlI',
+        muscleGroups: ['Calves'],
+        equipment: ['Calf Raise Platform', 'Optional Weight'],
+        tags: ['isolation', 'calves', 'legs', 'simple'],
+        isActive: true
+      },
+
+      // FULL BODY EXERCISES
+      {
+        name: 'Burpees',
+        category: 'Full Body',
+        description: 'High-intensity full body conditioning exercise',
+        instructions: '1. Start in standing position\n2. Drop to squat and place hands on floor\n3. Jump feet back to plank position\n4. Jump feet back to squat and jump up',
+        sets: '3×8-15',
+        difficulty: 'Intermediate',
+        youtubeUrl: 'https://www.youtube.com/watch?v=auBLPXO8Fww',
+        muscleGroups: ['Full Body', 'Cardiovascular System'],
+        equipment: ['Bodyweight'],
+        tags: ['full-body', 'cardio', 'conditioning', 'hiit'],
+        isActive: true
+      },
+      {
+        name: 'Mountain Climbers',
+        category: 'Full Body',
+        description: 'Dynamic core and cardio exercise',
+        instructions: '1. Start in plank position\n2. Alternate bringing knees to chest rapidly\n3. Maintain plank position throughout\n4. Keep core engaged and breathing steady',
+        sets: '3×30-60 seconds',
+        difficulty: 'Intermediate',
+        youtubeUrl: 'https://www.youtube.com/watch?v=kLh-uczlPLg',
+        muscleGroups: ['Core', 'Shoulders', 'Legs', 'Cardiovascular System'],
+        equipment: ['Bodyweight'],
+        tags: ['cardio', 'core', 'dynamic', 'conditioning'],
+        isActive: true
+      },
+      {
+        name: 'Planks',
+        category: 'Full Body',
+        description: 'Isometric core strengthening exercise',
+        instructions: '1. Start in push-up position\n2. Lower to forearms\n3. Keep body in straight line from head to heels\n4. Hold position while breathing normally',
+        sets: '3×30-90 seconds',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=pSHjTRCQxIw',
+        muscleGroups: ['Core', 'Shoulders', 'Glutes'],
+        equipment: ['Bodyweight'],
+        tags: ['core', 'isometric', 'stability', 'beginner'],
+        isActive: true
+      },
+      {
+        name: 'Turkish Get-ups',
+        category: 'Full Body',
+        description: 'Complex movement for strength and mobility',
+        instructions: '1. Lie on back holding weight overhead\n2. Use free hand and leg to get to standing\n3. Reverse movement to return to lying position\n4. Keep weight overhead throughout',
+        sets: '3×3-5 each side',
+        difficulty: 'Advanced',
+        youtubeUrl: 'https://www.youtube.com/watch?v=0bWRPC49-KI',
+        muscleGroups: ['Full Body', 'Core', 'Shoulders', 'Stability'],
+        equipment: ['Kettlebell', 'Dumbbell'],
+        tags: ['complex', 'mobility', 'strength', 'functional'],
+        isActive: true
+      },
+
+      // CARDIO EXERCISES
+      {
+        name: 'High-Intensity Interval Training (HIIT)',
+        category: 'Cardio',
+        description: 'Alternating high and low intensity cardio workout',
+        instructions: '1. Warm up for 5 minutes\n2. 30 seconds high intensity exercise\n3. 90 seconds low intensity recovery\n4. Repeat 8-12 cycles\n5. Cool down for 5 minutes',
+        duration: '20-30 minutes',
+        difficulty: 'Advanced',
+        youtubeUrl: 'https://www.youtube.com/watch?v=ml6cT4AZdqI',
+        muscleGroups: ['Cardiovascular System', 'Full Body'],
+        equipment: ['Bodyweight', 'Optional Equipment'],
+        tags: ['hiit', 'cardio', 'fat-burning', 'conditioning'],
+        isActive: true
+      },
+      {
+        name: 'Jump Rope',
+        category: 'Cardio',
+        description: 'Classic cardio exercise for coordination and endurance',
+        instructions: '1. Hold rope handles at hip level\n2. Swing rope overhead using wrists\n3. Jump just high enough to clear rope\n4. Land on balls of feet with slight knee bend',
+        duration: '10-30 minutes',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=1BZM2Vre5oc',
+        muscleGroups: ['Cardiovascular System', 'Calves', 'Coordination'],
+        equipment: ['Jump Rope'],
+        tags: ['cardio', 'coordination', 'portable', 'endurance'],
+        isActive: true
+      },
+      {
+        name: 'Running Form',
+        category: 'Cardio',
+        description: 'Proper running technique for efficiency and injury prevention',
+        instructions: '1. Maintain upright posture with slight forward lean\n2. Land on midfoot under center of gravity\n3. Use arms for balance and momentum\n4. Maintain steady breathing rhythm',
+        duration: '20-60 minutes',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=brFrKGPrEbE',
+        muscleGroups: ['Cardiovascular System', 'Legs', 'Core'],
+        equipment: ['Running Shoes'],
+        tags: ['running', 'endurance', 'outdoor', 'technique'],
+        isActive: true
+      },
+      {
+        name: 'Cycling Workout',
+        category: 'Cardio',
+        description: 'Indoor cycling workout for cardio fitness',
+        instructions: '1. Adjust bike seat and handlebars properly\n2. Start with 5-minute warm-up\n3. Alternate between moderate and high intensity\n4. Cool down with easy pedaling',
+        duration: '30-60 minutes',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=U_hYLS_Qk_Y',
+        muscleGroups: ['Cardiovascular System', 'Legs'],
+        equipment: ['Stationary Bike', 'Bicycle'],
+        tags: ['cycling', 'low-impact', 'endurance', 'cardio'],
+        isActive: true
+      },
+
+      // ADDITIONAL EXERCISES
+      {
+        name: 'Russian Twists',
+        category: 'Full Body',
+        description: 'Core exercise targeting obliques and abs',
+        instructions: '1. Sit on floor with knees bent\n2. Lean back slightly, lift feet off ground\n3. Rotate torso side to side\n4. Keep chest up and core engaged',
+        sets: '3×20-30',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=wkD8rjkodUI',
+        muscleGroups: ['Core', 'Obliques'],
+        equipment: ['Bodyweight', 'Optional Weight'],
+        tags: ['core', 'obliques', 'rotation', 'abs'],
+        isActive: true
+      },
+      {
+        name: 'Leg Press',
+        category: 'Leg',
+        description: 'Machine-based quad and glute exercise',
+        instructions: '1. Sit in leg press machine\n2. Place feet on platform shoulder-width apart\n3. Lower weight until knees at 90 degrees\n4. Press through heels to extend legs',
+        sets: '3×8-12',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+        muscleGroups: ['Quadriceps', 'Glutes', 'Hamstrings'],
+        equipment: ['Leg Press Machine'],
+        tags: ['machine', 'legs', 'quad', 'safe'],
+        isActive: true
+      },
+      {
+        name: 'Tricep Extensions',
+        category: 'Push',
+        description: 'Isolation exercise for tricep development',
+        instructions: '1. Hold dumbbell with both hands overhead\n2. Keep elbows stationary and close to head\n3. Lower weight behind head\n4. Extend arms back to starting position',
+        sets: '3×10-15',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=_gsUck-7M74',
+        muscleGroups: ['Triceps'],
+        equipment: ['Dumbbell'],
+        tags: ['isolation', 'triceps', 'arms', 'overhead'],
+        isActive: true
+      },
+      {
+        name: 'Face Pulls',
+        category: 'Pull',
+        description: 'Rear deltoid and upper back exercise',
+        instructions: '1. Set cable at face height with rope attachment\n2. Pull rope to face with elbows high\n3. Separate rope handles at face level\n4. Control return to starting position',
+        sets: '3×12-15',
+        difficulty: 'Beginner',
+        youtubeUrl: 'https://www.youtube.com/watch?v=rep-qVOkqgk',
+        muscleGroups: ['Rear Delts', 'Upper Traps', 'Rhomboids'],
+        equipment: ['Cable Machine', 'Rope Attachment'],
+        tags: ['isolation', 'rear-delts', 'posture', 'cable'],
+        isActive: true
+      }
+    ];
+
+    // Create exercises one by one for better error handling
+    const createdExercises = [];
+    
+    for (let i = 0; i < exercisesData.length; i++) {
+      const exerciseData = exercisesData[i];
+      
+      try {
+        console.log(`📝 Creating exercise ${i + 1}/${exercisesData.length}: ${exerciseData.name}`);
+        
+        // Manual YouTube video ID extraction
+        if (exerciseData.youtubeUrl) {
+          const videoIdMatch = exerciseData.youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          if (videoIdMatch) {
+            exerciseData.youtubeVideoId = videoIdMatch[1];
+            console.log(`   🎥 Video ID extracted: ${exerciseData.youtubeVideoId}`);
+          }
+        }
+        
+        const exercise = await Exercise.create(exerciseData);
+        createdExercises.push(exercise);
+        
+        console.log(`   ✅ Created: ${exercise.name}`);
+        
+      } catch (error) {
+        console.error(`   ❌ Failed to create ${exerciseData.name}:`, error.message);
+        if (error.errors) {
+          error.errors.forEach(err => {
+            console.error(`      - ${err.path}: ${err.message}`);
+          });
+        }
+      }
+    }
+    
+    console.log(`✅ Created ${createdExercises.length} exercises`);
+
     // Create 10 REALISTIC rules using medical logic
-    console.log('📏 Creating 10 realistic rules based on medical logic...');
+    console.log('\n📏 Creating 10 realistic rules based on medical logic...');
     
     const realisticCombinations = MedicalLogic.getRealisticCombinations();
     console.log(`Found ${realisticCombinations.length} realistic combinations`);
@@ -291,367 +653,8 @@ const masterSeed = async () => {
       console.log(`   ${combo.bmi}+${combo.bodyFat} → ${combo.program} (${rule.name})`);
     });
 
-    // Create exercises (keep existing exercise data)
-    console.log('\n💪 Creating exercises...');
-    const exercisesData = [
-      // Push Exercises
-      {
-        name: 'Bench Press',
-        category: 'Push',
-        description: 'Upper body compound exercise targeting chest, shoulders, and triceps',
-        instructions: '1. Lie on bench with feet flat on floor\n2. Grip bar slightly wider than shoulder width\n3. Lower bar to chest with control\n4. Press bar up to starting position',
-        sets: '3×6-8',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Chest', 'Shoulders', 'Triceps'],
-        equipment: ['Barbell', 'Bench']
-      },
-      {
-        name: 'Shoulder Press',
-        category: 'Push',
-        description: 'Upper body exercise targeting shoulders and triceps',
-        instructions: '1. Stand with feet shoulder-width apart\n2. Hold dumbbells at shoulder height\n3. Press weights overhead\n4. Lower with control to starting position',
-        sets: '3×8-10',
-        difficulty: 'Beginner',
-        muscleGroups: ['Shoulders', 'Triceps'],
-        equipment: ['Dumbbells']
-      },
-      {
-        name: 'Incline Dumbbell Press',
-        category: 'Push',
-        description: 'Upper chest focused exercise using incline bench',
-        instructions: '1. Set bench to 30-45 degree incline\n2. Hold dumbbells at chest level\n3. Press weights up and slightly inward\n4. Lower with control',
-        sets: '3×8-10',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Upper Chest', 'Shoulders', 'Triceps'],
-        equipment: ['Dumbbells', 'Incline Bench']
-      },
-      {
-        name: 'Incline Dumbbell Flyes',
-        category: 'Push',
-        description: 'Isolation exercise for chest development',
-        instructions: '1. Lie on incline bench with dumbbells\n2. Start with arms extended above chest\n3. Lower weights in wide arc\n4. Squeeze chest to return to start',
-        sets: '3×10-15',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Chest'],
-        equipment: ['Dumbbells', 'Incline Bench']
-      },
-      {
-        name: 'Triceps Pushdowns',
-        category: 'Push',
-        description: 'Isolation exercise targeting triceps',
-        instructions: '1. Stand at cable machine with rope attachment\n2. Keep elbows at sides\n3. Push rope down until arms are straight\n4. Control the weight back up',
-        sets: '3×10-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Triceps'],
-        equipment: ['Cable Machine', 'Rope Attachment']
-      },
-      {
-        name: 'Triceps Extensions',
-        category: 'Push',
-        description: 'Isolation exercise for triceps development',
-        instructions: '1. Hold dumbbell with both hands overhead\n2. Keep elbows stationary\n3. Lower weight behind head\n4. Extend arms back to start',
-        sets: '2×12-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Triceps'],
-        equipment: ['Dumbbell']
-      },
-      {
-        name: 'Lateral Raises',
-        category: 'Push',
-        description: 'Shoulder isolation exercise for medial deltoids',
-        instructions: '1. Stand with dumbbells at sides\n2. Raise arms out to sides\n3. Stop at shoulder height\n4. Lower with control',
-        sets: '3×10-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Medial Delts'],
-        equipment: ['Dumbbells']
-      },
-
-      // Pull Exercises
-      {
-        name: 'Rows',
-        category: 'Pull',
-        description: 'Upper body exercise targeting middle traps, rhomboids, and rear delts',
-        instructions: '1. Sit at cable row machine\n2. Pull handle to lower chest\n3. Squeeze shoulder blades together\n4. Control weight back to start',
-        sets: '3×6-8',
-        difficulty: 'Beginner',
-        muscleGroups: ['Middle Traps', 'Rhomboids', 'Rear Delts'],
-        equipment: ['Cable Machine']
-      },
-      {
-        name: 'Pull-Ups',
-        category: 'Pull',
-        description: 'Upper body compound exercise targeting lats, rhomboids, and biceps',
-        instructions: '1. Hang from pull-up bar with overhand grip\n2. Pull body up until chin over bar\n3. Lower with control to full extension\n4. Repeat for desired reps',
-        sets: '3×8-10',
-        difficulty: 'Advanced',
-        muscleGroups: ['Lats', 'Rhomboids', 'Biceps'],
-        equipment: ['Pull-up Bar']
-      },
-      {
-        name: 'Lat Pull-Downs',
-        category: 'Pull',
-        description: 'Upper body exercise targeting latissimus dorsi',
-        instructions: '1. Sit at lat pulldown machine\n2. Grip bar wider than shoulders\n3. Pull bar to upper chest\n4. Control weight back up',
-        sets: '3×8-10',
-        difficulty: 'Beginner',
-        muscleGroups: ['Lats', 'Biceps'],
-        equipment: ['Lat Pulldown Machine']
-      },
-      {
-        name: 'Seated Cable Rows',
-        category: 'Pull',
-        description: 'Seated rowing exercise for back development',
-        instructions: '1. Sit with knees slightly bent\n2. Pull handle to lower ribs\n3. Squeeze shoulder blades\n4. Control return to start',
-        sets: '3×8-10',
-        difficulty: 'Beginner',
-        muscleGroups: ['Lats', 'Rhomboids', 'Middle Traps'],
-        equipment: ['Cable Machine', 'Seated Row Attachment']
-      },
-      {
-        name: 'Face Pulls',
-        category: 'Pull',
-        description: 'Rear delt and upper back exercise',
-        instructions: '1. Set cable at face height\n2. Pull rope to face with elbows high\n3. Separate rope at face level\n4. Control return to start',
-        sets: '3×10-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Rear Delts', 'Upper Traps'],
-        equipment: ['Cable Machine', 'Rope Attachment']
-      },
-      {
-        name: 'Barbell Shrugs',
-        category: 'Pull',
-        description: 'Trapezius muscle development exercise',
-        instructions: '1. Hold barbell with overhand grip\n2. Shrug shoulders up toward ears\n3. Hold briefly at top\n4. Lower with control',
-        sets: '3×8-10',
-        difficulty: 'Beginner',
-        muscleGroups: ['Upper Traps'],
-        equipment: ['Barbell']
-      },
-      {
-        name: 'Dumbbell Curls',
-        category: 'Pull',
-        description: 'Isolation exercise targeting biceps',
-        instructions: '1. Stand with dumbbells at sides\n2. Curl weights up to shoulders\n3. Squeeze biceps at top\n4. Lower with control',
-        sets: '3×10-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Biceps'],
-        equipment: ['Dumbbells']
-      },
-      {
-        name: 'Biceps Curls',
-        category: 'Pull',
-        description: 'Classic bicep development exercise',
-        instructions: '1. Stand with weights at sides\n2. Curl up keeping elbows stationary\n3. Squeeze at top of movement\n4. Lower slowly',
-        sets: '3×10-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Biceps'],
-        equipment: ['Dumbbells', 'Barbell']
-      },
-      {
-        name: 'Chest Supported Rows',
-        category: 'Pull',
-        description: 'Rowing exercise with chest support for strict form',
-        instructions: '1. Set incline bench to 45 degrees\n2. Lie chest down with dumbbells\n3. Row weights to lower ribs\n4. Squeeze shoulder blades',
-        sets: '3×8-10',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Lats', 'Rhomboids', 'Middle Traps'],
-        equipment: ['Incline Bench', 'Dumbbells']
-      },
-
-      // Leg Exercises
-      {
-        name: 'Squats',
-        category: 'Leg',
-        description: 'Lower body compound exercise targeting quadriceps, glutes, and hamstrings',
-        instructions: '1. Stand with feet shoulder-width apart\n2. Lower body as if sitting back in chair\n3. Keep chest up and knees tracking over toes\n4. Drive through heels to stand',
-        sets: '3×6-8',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Quadriceps', 'Glutes', 'Hamstrings'],
-        equipment: ['Barbell', 'Squat Rack']
-      },
-      {
-        name: 'Romanian Deadlifts',
-        category: 'Leg',
-        description: 'Hip hinge movement targeting hamstrings and glutes',
-        instructions: '1. Hold barbell with overhand grip\n2. Hinge at hips keeping back straight\n3. Lower bar to mid-shin level\n4. Drive hips forward to return',
-        sets: '3×6-8',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Hamstrings', 'Glutes', 'Lower Back'],
-        equipment: ['Barbell']
-      },
-      {
-        name: 'Leg Press',
-        category: 'Leg',
-        description: 'Lower body exercise targeting quadriceps and glutes',
-        instructions: '1. Sit in leg press machine\n2. Place feet on platform shoulder-width apart\n3. Lower weight until knees at 90 degrees\n4. Press through heels to extend',
-        sets: '3×8-12',
-        difficulty: 'Beginner',
-        muscleGroups: ['Quadriceps', 'Glutes'],
-        equipment: ['Leg Press Machine']
-      },
-      {
-        name: 'Leg Curls',
-        category: 'Leg',
-        description: 'Isolation exercise targeting hamstrings',
-        instructions: '1. Lie face down on leg curl machine\n2. Position ankles under pad\n3. Curl heels toward glutes\n4. Lower with control',
-        sets: '3×8-10',
-        difficulty: 'Beginner',
-        muscleGroups: ['Hamstrings'],
-        equipment: ['Leg Curl Machine']
-      },
-      {
-        name: 'Standing Calf Raises',
-        category: 'Leg',
-        description: 'Lower body exercise targeting calf muscles',
-        instructions: '1. Stand on balls of feet on raised surface\n2. Lower heels below platform level\n3. Rise up on toes as high as possible\n4. Lower with control',
-        sets: '3×6-10',
-        difficulty: 'Beginner',
-        muscleGroups: ['Calves'],
-        equipment: ['Calf Raise Platform', 'Weight']
-      },
-      {
-        name: 'Seated Calf Raises',
-        category: 'Leg',
-        description: 'Seated calf muscle development exercise',
-        instructions: '1. Sit with weight on thighs\n2. Place balls of feet on platform\n3. Rise up on toes\n4. Lower heels below platform',
-        sets: '2×10-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Calves'],
-        equipment: ['Seated Calf Raise Machine']
-      },
-
-      // Full Body Exercises
-      {
-        name: 'Deadlift',
-        category: 'Full Body',
-        description: 'Compound exercise targeting posterior chain muscles',
-        instructions: '1. Stand with feet hip-width apart\n2. Bend at hips and knees to grip bar\n3. Keep back straight and lift bar\n4. Stand tall then lower with control',
-        sets: '3×5-6',
-        difficulty: 'Advanced',
-        muscleGroups: ['Hamstrings', 'Glutes', 'Lower Back', 'Traps'],
-        equipment: ['Barbell', 'Weight Plates']
-      },
-      {
-        name: 'Burpees',
-        category: 'Full Body',
-        description: 'Full body conditioning exercise',
-        instructions: '1. Start standing\n2. Drop to push-up position\n3. Perform push-up\n4. Jump feet to hands then jump up',
-        sets: '3×8-12',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Full Body'],
-        equipment: ['Bodyweight']
-      },
-      {
-        name: 'Mountain Climbers',
-        category: 'Full Body',
-        description: 'Dynamic core and cardio exercise',
-        instructions: '1. Start in plank position\n2. Alternate bringing knees to chest\n3. Maintain fast pace\n4. Keep core engaged',
-        sets: '3×30 seconds',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Core', 'Shoulders', 'Legs'],
-        equipment: ['Bodyweight']
-      },
-      {
-        name: 'Thrusters',
-        category: 'Full Body',
-        description: 'Combined squat and overhead press movement',
-        instructions: '1. Hold dumbbells at shoulder height\n2. Perform squat\n3. Drive up and press weights overhead\n4. Lower weights and repeat',
-        sets: '3×8-12',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Legs', 'Shoulders', 'Core'],
-        equipment: ['Dumbbells']
-      },
-
-      // Cardio Exercises
-      {
-        name: 'Treadmill Running',
-        category: 'Cardio',
-        description: 'Cardiovascular exercise using treadmill',
-        instructions: '1. Start with 5-minute warm-up walk\n2. Gradually increase speed\n3. Maintain steady pace\n4. Cool down with 5-minute walk',
-        duration: '20-30 minutes',
-        difficulty: 'Beginner',
-        muscleGroups: ['Legs', 'Cardiovascular System'],
-        equipment: ['Treadmill']
-      },
-      {
-        name: 'Stationary Bike',
-        category: 'Cardio',
-        description: 'Low-impact cardiovascular exercise',
-        instructions: '1. Adjust seat height properly\n2. Start with light resistance\n3. Maintain steady rhythm\n4. Gradually increase intensity',
-        duration: '20-30 minutes',
-        difficulty: 'Beginner',
-        muscleGroups: ['Legs', 'Cardiovascular System'],
-        equipment: ['Stationary Bike']
-      },
-      {
-        name: 'Elliptical',
-        category: 'Cardio',
-        description: 'Full body low-impact cardio exercise',
-        instructions: '1. Step onto pedals\n2. Grip handles lightly\n3. Push and pull with arms\n4. Maintain smooth motion',
-        duration: '20-30 minutes',
-        difficulty: 'Beginner',
-        muscleGroups: ['Full Body', 'Cardiovascular System'],
-        equipment: ['Elliptical Machine']
-      },
-      {
-        name: 'Rowing Machine',
-        category: 'Cardio',
-        description: 'Full body cardio and strength exercise',
-        instructions: '1. Sit with knees bent\n2. Grip handle with both hands\n3. Drive with legs then pull with arms\n4. Reverse motion smoothly',
-        duration: '15-25 minutes',
-        difficulty: 'Intermediate',
-        muscleGroups: ['Full Body', 'Cardiovascular System'],
-        equipment: ['Rowing Machine']
-      },
-      {
-        name: 'High Intensity Interval Training',
-        category: 'Cardio',
-        description: 'Alternating high and low intensity cardio',
-        instructions: '1. Warm up for 5 minutes\n2. 30 seconds high intensity\n3. 90 seconds low intensity\n4. Repeat 8-12 cycles\n5. Cool down 5 minutes',
-        duration: '20-25 minutes',
-        difficulty: 'Advanced',
-        muscleGroups: ['Full Body', 'Cardiovascular System'],
-        equipment: ['Any Cardio Equipment']
-      },
-
-      // Additional Core/Functional Exercises
-      {
-        name: 'Plank',
-        category: 'Full Body',
-        description: 'Isometric core strengthening exercise',
-        instructions: '1. Start in push-up position\n2. Lower to forearms\n3. Keep body straight line\n4. Hold position',
-        sets: '3×30-60 seconds',
-        difficulty: 'Beginner',
-        muscleGroups: ['Core', 'Shoulders'],
-        equipment: ['Bodyweight']
-      },
-      {
-        name: 'Push-Ups',
-        category: 'Push',
-        description: 'Bodyweight upper body exercise',
-        instructions: '1. Start in plank position\n2. Lower chest to ground\n3. Push back up to start\n4. Keep body straight',
-        sets: '3×8-15',
-        difficulty: 'Beginner',
-        muscleGroups: ['Chest', 'Shoulders', 'Triceps'],
-        equipment: ['Bodyweight']
-      },
-      {
-        name: 'Lunges',
-        category: 'Leg',
-        description: 'Single leg strengthening exercise',
-        instructions: '1. Step forward into lunge position\n2. Lower back knee toward ground\n3. Push back to starting position\n4. Alternate legs',
-        sets: '3×10-12 each leg',
-        difficulty: 'Beginner',
-        muscleGroups: ['Quadriceps', 'Glutes', 'Hamstrings'],
-        equipment: ['Bodyweight', 'Optional Dumbbells']
-      }
-    ];
-
-    const exercises = await Exercise.bulkCreate(exercisesData);
-    console.log(`✅ Created ${exercises.length} exercises`);
-
     // Create sample consultations for testing realistic combinations
-    console.log('📋 Creating sample consultations...');
+    console.log('\n📋 Creating sample consultations...');
     const consultationsData = [
       {
         userId: sampleUsers[0].id, // John - male
@@ -692,10 +695,23 @@ const masterSeed = async () => {
     console.log('\n📊 COMPLETE DATABASE SEEDING SUMMARY');
     console.log('====================================');
     console.log(`👤 Users: ${await User.count()}`);
-    console.log(`🏋️ Programs: ${await Program.count()} (P1-P10 COMPLETE!)`);
-    console.log(`📏 Rules: ${await Rule.count()} (10 REALISTIC combinations only)`);
+    console.log(`🏋️ Programs: ${await Program.count()}`);
+    console.log(`📏 Rules: ${await Rule.count()}`);
     console.log(`💪 Exercises: ${await Exercise.count()}`);
     console.log(`📋 Consultations: ${await Consultation.count()}`);
+
+    // Exercise statistics
+    const withYouTube = await Exercise.count({
+      where: { youtubeUrl: { [sequelize.Sequelize.Op.ne]: null } }
+    });
+    const withVideoId = await Exercise.count({
+      where: { youtubeVideoId: { [sequelize.Sequelize.Op.ne]: null } }
+    });
+
+    console.log('\n💪 EXERCISE STATISTICS:');
+    console.log(`📺 With YouTube URL: ${withYouTube}`);
+    console.log(`🎦 With Video ID: ${withVideoId}`);
+    console.log(`✅ YouTube Success Rate: ${createdExercises.length > 0 ? Math.round((withVideoId / createdExercises.length) * 100) : 0}%`);
 
     console.log('\n🎉 MEDICAL LOGIC IMPLEMENTATION SUCCESSFUL!');
     console.log('\n🔑 LOGIN CREDENTIALS');
@@ -717,11 +733,16 @@ const masterSeed = async () => {
 
     console.log('\n✅ FORWARD CHAINING ENGINE: Enhanced with edge case handling');
     console.log('✅ MEDICAL LOGIC: 10 realistic combinations only');
+    console.log('✅ EXERCISE SYSTEM: YouTube integration ready');
     console.log('✅ SYSTEM 100% READY FOR FITNESS EXPERTS!');
 
     process.exit(0);
   } catch (error) {
     console.error('❌ Seeding failed:', error);
+    console.error('Error details:', error.message);
+    if (error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   }
 };

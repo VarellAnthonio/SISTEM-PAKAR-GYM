@@ -1,4 +1,4 @@
-// backend/models/Exercise.js (UPDATED VERSION)
+// backend/models/Exercise.js - FIXED VERSION
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
@@ -68,13 +68,7 @@ const Exercise = sequelize.define('Exercise', {
   },
   youtubeVideoId: {
     type: DataTypes.STRING(20),
-    allowNull: true,
-    validate: {
-      len: {
-        args: [11, 11],
-        msg: 'YouTube video ID must be exactly 11 characters'
-      }
-    }
+    allowNull: true
   },
   // Legacy fields (keeping for backward compatibility)
   videoUrl: {
@@ -169,15 +163,29 @@ const Exercise = sequelize.define('Exercise', {
     beforeCreate: async (exercise) => {
       // Extract YouTube video ID if URL is provided
       if (exercise.youtubeUrl && !exercise.youtubeVideoId) {
-        const { extractVideoId } = await import('../utils/youtubeHelper.js');
-        exercise.youtubeVideoId = extractVideoId(exercise.youtubeUrl);
+        try {
+          const { extractVideoId } = await import('../utils/youtubeHelper.js');
+          const videoId = extractVideoId(exercise.youtubeUrl);
+          if (videoId) {
+            exercise.youtubeVideoId = videoId;
+          }
+        } catch (error) {
+          console.warn('Error extracting YouTube video ID:', error.message);
+        }
       }
     },
     beforeUpdate: async (exercise) => {
       // Update YouTube video ID if URL changed
       if (exercise.changed('youtubeUrl') && exercise.youtubeUrl) {
-        const { extractVideoId } = await import('../utils/youtubeHelper.js');
-        exercise.youtubeVideoId = extractVideoId(exercise.youtubeUrl);
+        try {
+          const { extractVideoId } = await import('../utils/youtubeHelper.js');
+          const videoId = extractVideoId(exercise.youtubeUrl);
+          if (videoId) {
+            exercise.youtubeVideoId = videoId;
+          }
+        } catch (error) {
+          console.warn('Error extracting YouTube video ID:', error.message);
+        }
       } else if (exercise.changed('youtubeUrl') && !exercise.youtubeUrl) {
         exercise.youtubeVideoId = null;
       }
@@ -283,36 +291,49 @@ Exercise.getByDifficulty = async function(difficulty) {
 
 // YouTube specific methods
 Exercise.createWithYouTube = async function(exerciseData) {
-  const { extractVideoId, validateYouTubeUrl } = await import('../utils/youtubeHelper.js');
-  
-  if (exerciseData.youtubeUrl) {
-    if (!validateYouTubeUrl(exerciseData.youtubeUrl)) {
-      throw new Error('Invalid YouTube URL');
+  try {
+    const { extractVideoId, validateYouTubeUrl } = await import('../utils/youtubeHelper.js');
+    
+    if (exerciseData.youtubeUrl) {
+      if (!validateYouTubeUrl(exerciseData.youtubeUrl)) {
+        throw new Error('Invalid YouTube URL');
+      }
+      const videoId = extractVideoId(exerciseData.youtubeUrl);
+      if (videoId) {
+        exerciseData.youtubeVideoId = videoId;
+      }
     }
-    exerciseData.youtubeVideoId = extractVideoId(exerciseData.youtubeUrl);
+    
+    return await this.create(exerciseData);
+  } catch (error) {
+    console.error('Error creating exercise with YouTube:', error);
+    throw error;
   }
-  
-  return await this.create(exerciseData);
 };
 
 Exercise.updateYouTubeUrl = async function(id, youtubeUrl) {
-  const { extractVideoId, validateYouTubeUrl } = await import('../utils/youtubeHelper.js');
-  
-  const exercise = await this.findByPk(id);
-  if (!exercise) {
-    throw new Error('Exercise not found');
+  try {
+    const { extractVideoId, validateYouTubeUrl } = await import('../utils/youtubeHelper.js');
+    
+    const exercise = await this.findByPk(id);
+    if (!exercise) {
+      throw new Error('Exercise not found');
+    }
+    
+    if (youtubeUrl && !validateYouTubeUrl(youtubeUrl)) {
+      throw new Error('Invalid YouTube URL');
+    }
+    
+    const updateData = {
+      youtubeUrl,
+      youtubeVideoId: youtubeUrl ? extractVideoId(youtubeUrl) : null
+    };
+    
+    return await exercise.update(updateData);
+  } catch (error) {
+    console.error('Error updating YouTube URL:', error);
+    throw error;
   }
-  
-  if (youtubeUrl && !validateYouTubeUrl(youtubeUrl)) {
-    throw new Error('Invalid YouTube URL');
-  }
-  
-  const updateData = {
-    youtubeUrl,
-    youtubeVideoId: youtubeUrl ? extractVideoId(youtubeUrl) : null
-  };
-  
-  return await exercise.update(updateData);
 };
 
 export default Exercise;

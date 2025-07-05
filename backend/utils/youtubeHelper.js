@@ -1,16 +1,16 @@
-// backend/utils/youtubeHelper.js
+// backend/utils/youtubeHelper.js - FIXED VERSION
 
 /**
  * YouTube URL Helper Functions
  * Pure JavaScript implementation for YouTube URL validation and utilities
  */
 
-// YouTube URL patterns
+// YouTube URL patterns - FIXED REGEX
 const YOUTUBE_PATTERNS = [
-  /^https?:\/\/(www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-  /^https?:\/\/(www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-  /^https?:\/\/youtu\.be\/([a-zA-Z0-9_-]{11})/,
-  /^https?:\/\/(www\.)?youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
+  /^https?:\/\/(www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11}).*$/,
+  /^https?:\/\/(www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11}).*$/,
+  /^https?:\/\/youtu\.be\/([a-zA-Z0-9_-]{11}).*$/,
+  /^https?:\/\/(www\.)?youtube\.com\/v\/([a-zA-Z0-9_-]{11}).*$/
 ];
 
 /**
@@ -228,16 +228,6 @@ export const extractVideoIdFromEmbed = (embedCode) => {
 
   // Fallback to URL patterns
   return extractVideoId(embedCode);
-};
-
-/**
- * Get video duration placeholder (would need API for real duration)
- * @param {string} videoId - YouTube video ID
- * @returns {string} - Duration placeholder
- */
-export const getVideoDurationPlaceholder = (videoId) => {
-  // In a real implementation, you'd use YouTube Data API to get actual duration
-  return 'Duration not available';
 };
 
 /**
