@@ -137,14 +137,9 @@ export const apiService = {
   users: {
     getAll: (params = {}) => api.get('/users', { params }),
     getById: (id) => api.get(`/users/${id}`),
-    update: (id, data) => api.put(`/users/${id}`, data),
     delete: (id) => api.delete(`/users/${id}`),
     toggleStatus: (id) => api.patch(`/users/${id}/toggle`),
     getStats: () => api.get('/users/stats'),
-    
-    // User management
-    resetPassword: (id) => api.post(`/users/${id}/reset-password`),
-    changeRole: (id, role) => api.patch(`/users/${id}/role`, { role }),
   },
 
   // System utilities

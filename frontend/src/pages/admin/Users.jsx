@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/Users.jsx - UPDATED VERSION WITH REAL API
+// frontend/src/pages/admin/Users.jsx - SIMPLIFIED VERSION (View, Toggle, Delete Only)
 import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
 import UserModal from '../../components/admin/UserModal';
@@ -6,9 +6,7 @@ import {
   MagnifyingGlassIcon, 
   UserIcon, 
   EyeIcon, 
-  PencilIcon, 
   TrashIcon,
-  KeyIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { userService } from '../../services/user';
@@ -22,11 +20,9 @@ const AdminUsers = () => {
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   
-  // Modal states
+  // Modal states - SIMPLIFIED (hanya view mode)
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [modalMode, setModalMode] = useState('view');
-  const [saveLoading, setSaveLoading] = useState(false);
   
   // Pagination
   const [pagination, setPagination] = useState({
@@ -117,52 +113,13 @@ const AdminUsers = () => {
     }
   };
 
+  // SIMPLIFIED: Hanya view modal
   const handleView = (user) => {
     setSelectedUser(user);
-    setModalMode('view');
     setShowModal(true);
   };
 
-  const handleEdit = (user) => {
-    setSelectedUser(user);
-    setModalMode('edit');
-    setShowModal(true);
-  };
-
-  const handleResetPassword = (user) => {
-    setSelectedUser(user);
-    setModalMode('resetPassword');
-    setShowModal(true);
-  };
-
-  const handleSave = async (formData) => {
-    try {
-      setSaveLoading(true);
-      let result;
-
-      if (modalMode === 'edit') {
-        result = await userService.update(selectedUser.id, formData);
-      } else if (modalMode === 'resetPassword') {
-        result = await userService.resetPassword(selectedUser.id, formData.newPassword);
-      }
-
-      if (result.success) {
-        toast.success(result.message || 'User updated successfully');
-        await fetchUsers();
-        await fetchStats();
-        setShowModal(false);
-        setSelectedUser(null);
-      } else {
-        throw new Error(result.message || 'Save failed');
-      }
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error(error.message || 'Failed to save user');
-      throw error;
-    } finally {
-      setSaveLoading(false);
-    }
-  };
+  // REMOVED: handleEdit, handleResetPassword, handleSave methods
 
   const handleDelete = async (userId) => {
     if (!window.confirm('Yakin ingin menghapus pengguna ini? Tindakan ini tidak dapat dibatalkan.')) {
@@ -173,34 +130,40 @@ const AdminUsers = () => {
       const result = await userService.delete(userId);
       
       if (result.success) {
-        toast.success('User deleted successfully');
+        toast.success('User berhasil dihapus');
         await fetchUsers();
         await fetchStats();
         setShowModal(false);
         setSelectedUser(null);
       } else {
-        toast.error(result.message || 'Failed to delete user');
+        toast.error(result.message || 'Gagal menghapus user');
       }
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete user');
+      toast.error('Gagal menghapus user');
     }
   };
 
   const handleToggleStatus = async (user) => {
+    // Safety check - prevent admin from deactivating themselves
+    if (user.id === currentUserId && user.isActive) {
+      toast.error('Anda tidak dapat menonaktifkan akun sendiri');
+      return;
+    }
+
     try {
       const result = await userService.toggleStatus(user.id);
       
       if (result.success) {
-        toast.success(result.message || 'Status updated successfully');
+        toast.success(result.message || 'Status berhasil diperbarui');
         await fetchUsers();
         await fetchStats();
       } else {
-        toast.error(result.message || 'Failed to update status');
+        toast.error(result.message || 'Gagal memperbarui status');
       }
     } catch (error) {
       console.error('Toggle status error:', error);
-      toast.error('Failed to update status');
+      toast.error('Gagal memperbarui status');
     }
   };
 
@@ -242,6 +205,9 @@ const AdminUsers = () => {
       return 'Invalid Date';
     }
   };
+
+  // Get current user ID for safety checks
+  const currentUserId = JSON.parse(localStorage.getItem('user') || '{}').id;
 
   // Loading state
   if (loading && users.length === 0) {
@@ -293,7 +259,7 @@ const AdminUsers = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Kelola Pengguna</h1>
-            <p className="text-gray-600 mt-1">Manajemen akun pengguna sistem</p>
+            <p className="text-gray-600 mt-1">Lihat, nonaktifkan, atau hapus pengguna sistem</p>
           </div>
         </div>
 
@@ -388,7 +354,7 @@ const AdminUsers = () => {
           )}
         </div>
 
-        {/* Desktop Table */}
+        {/* Desktop Table - SIMPLIFIED ACTIONS */}
         <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -450,6 +416,7 @@ const AdminUsers = () => {
                     {formatDate(user.createdAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                    {/* View Button */}
                     <button
                       onClick={() => handleView(user)}
                       className="text-gray-600 hover:text-gray-800 p-1 hover:bg-gray-100 rounded transition-colors"
@@ -457,20 +424,8 @@ const AdminUsers = () => {
                     >
                       <EyeIcon className="h-4 w-4" />
                     </button>
-                    <button
-                      onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit User"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleResetPassword(user)}
-                      className="text-orange-600 hover:text-orange-800 p-1 hover:bg-orange-50 rounded transition-colors"
-                      title="Reset Password"
-                    >
-                      <KeyIcon className="h-4 w-4" />
-                    </button>
+                    
+                    {/* Toggle Status Button - dengan safety check */}
                     {user.role !== 'admin' && (
                       <button
                         onClick={() => handleToggleStatus(user)}
@@ -484,6 +439,8 @@ const AdminUsers = () => {
                         {user.isActive ? '🔒' : '🔓'}
                       </button>
                     )}
+                    
+                    {/* Delete Button - dengan safety check */}
                     {user.role !== 'admin' && (
                       <button
                         onClick={() => handleDelete(user.id)}
@@ -500,7 +457,7 @@ const AdminUsers = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
+        {/* Mobile Cards - SIMPLIFIED ACTIONS */}
         <div className="md:hidden space-y-4">
           {users.map((user, index) => (
             <div key={user.id} className="bg-white rounded-lg shadow p-4">
@@ -544,34 +501,29 @@ const AdminUsers = () => {
                   >
                     <EyeIcon className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded transition-colors"
-                    title="Edit"
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleResetPassword(user)}
-                    className="text-orange-600 hover:text-orange-800 p-2 hover:bg-orange-50 rounded transition-colors"
-                    title="Reset Password"
-                  >
-                    <KeyIcon className="h-4 w-4" />
-                  </button>
                 </div>
                 
                 <div className="flex space-x-2">
                   {user.role !== 'admin' && (
-                    <button
-                      onClick={() => handleToggleStatus(user)}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                        user.isActive 
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      }`}
-                    >
-                      {user.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleToggleStatus(user)}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                          user.isActive 
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
+                      >
+                        {user.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="px-3 py-1 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors"
+                      >
+                        Hapus
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -661,7 +613,7 @@ const AdminUsers = () => {
           </div>
         )}
 
-        {/* User Modal */}
+        {/* SIMPLIFIED User Modal - View Only */}
         <UserModal
           isOpen={showModal}
           onClose={() => {
@@ -669,10 +621,8 @@ const AdminUsers = () => {
             setSelectedUser(null);
           }}
           user={selectedUser}
-          onSave={handleSave}
           onDelete={handleDelete}
-          loading={saveLoading}
-          mode={modalMode}
+          mode="view" // FIXED: Always view mode
         />
       </div>
     </AdminSidebarLayout>

@@ -1,4 +1,4 @@
-// frontend/src/services/user.js
+// frontend/src/services/user.js - SIMPLIFIED VERSION (View, Toggle, Delete Only)
 import { apiService } from './api';
 
 export const userService = {
@@ -28,7 +28,7 @@ export const userService = {
     }
   },
 
-  // Get single user by ID
+  // Get single user by ID (VIEW ONLY)
   getById: async (id) => {
     try {
       const response = await apiService.users.getById(id);
@@ -45,27 +45,9 @@ export const userService = {
     }
   },
 
-  // Update user
-  update: async (id, userData) => {
-    try {
-      const response = await apiService.users.update(id, userData);
-      return {
-        success: true,
-        data: response.data.data,
-        message: response.data.message
-      };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to update user';
-      const errors = error.response?.data?.errors || [];
-      return {
-        success: false,
-        message,
-        errors
-      };
-    }
-  },
+  // REMOVED: update method - Admin tidak bisa edit user info
 
-  // Delete user
+  // Delete user (with safety checks)
   delete: async (id) => {
     try {
       const response = await apiService.users.delete(id);
@@ -82,7 +64,7 @@ export const userService = {
     }
   },
 
-  // Toggle user status
+  // Toggle user status (active/inactive)
   toggleStatus: async (id) => {
     try {
       const response = await apiService.users.toggleStatus(id);
@@ -117,75 +99,8 @@ export const userService = {
     }
   },
 
-  // Reset user password
-  resetPassword: async (id, newPassword) => {
-    try {
-      const response = await apiService.users.resetPassword(id, { newPassword });
-      return {
-        success: true,
-        message: response.data.message
-      };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to reset password';
-      return {
-        success: false,
-        message
-      };
-    }
-  },
-
-  // Change user role
-  changeRole: async (id, role) => {
-    try {
-      const response = await apiService.users.changeRole(id, role);
-      return {
-        success: true,
-        data: response.data.data,
-        message: response.data.message
-      };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to change user role';
-      return {
-        success: false,
-        message
-      };
-    }
-  },
-
-  // Utility methods
+  // Utility methods - SIMPLIFIED
   utils: {
-    // Validate user data
-    validateUserData: (userData) => {
-      const errors = [];
-
-      if (userData.name && userData.name.trim().length < 2) {
-        errors.push('Name must be at least 2 characters');
-      }
-
-      if (userData.email && !this.isValidEmail(userData.email)) {
-        errors.push('Please provide a valid email');
-      }
-
-      if (userData.role && !['user', 'admin'].includes(userData.role)) {
-        errors.push('Role must be either user or admin');
-      }
-
-      if (userData.gender && !['male', 'female'].includes(userData.gender)) {
-        errors.push('Gender must be either male or female');
-      }
-
-      return {
-        isValid: errors.length === 0,
-        errors
-      };
-    },
-
-    // Email validation
-    isValidEmail: (email) => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return emailRegex.test(email);
-    },
-
     // Get gender icon
     getGenderIcon: (gender) => {
       return gender === 'male' ? '👨' : '👩';
@@ -247,17 +162,53 @@ export const userService = {
       }
     },
 
-    // Clean user data for API
-    cleanUserData: (userData) => {
-      const cleaned = {};
+    // Check if user can be deleted (safety check)
+    canDeleteUser: (user, currentUserId) => {
+      // Cannot delete self
+      if (user.id === currentUserId) {
+        return { canDelete: false, reason: 'Cannot delete your own account' };
+      }
       
-      if (userData.name !== undefined) cleaned.name = userData.name.trim();
-      if (userData.email !== undefined) cleaned.email = userData.email.trim().toLowerCase();
-      if (userData.role !== undefined) cleaned.role = userData.role;
-      if (userData.isActive !== undefined) cleaned.isActive = userData.isActive;
-      if (userData.gender !== undefined) cleaned.gender = userData.gender;
+      // Cannot delete admin accounts
+      if (user.role === 'admin') {
+        return { canDelete: false, reason: 'Cannot delete administrator accounts' };
+      }
       
-      return cleaned;
+      return { canDelete: true };
+    },
+
+    // Check if user status can be toggled (safety check)
+    canToggleStatus: (user, currentUserId) => {
+      // Cannot deactivate self
+      if (user.id === currentUserId && user.isActive) {
+        return { canToggle: false, reason: 'Cannot deactivate your own account' };
+      }
+      
+      // Cannot toggle admin accounts (additional safety)
+      if (user.role === 'admin' && user.id !== currentUserId) {
+        return { canToggle: false, reason: 'Cannot modify other administrator accounts' };
+      }
+      
+      return { canToggle: true };
+    },
+
+    // Get user summary for display
+    getUserSummary: (user) => {
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        gender: user.gender,
+        createdAt: user.createdAt,
+        consultationCount: user.consultations ? user.consultations.length : 0,
+        displayName: `${user.name} (${user.email})`,
+        statusText: user.isActive ? 'Aktif' : 'Nonaktif',
+        roleText: user.role === 'admin' ? 'Administrator' : 'User',
+        genderIcon: this.getGenderIcon(user.gender),
+        genderText: this.getGenderDisplay(user.gender)
+      };
     }
   }
 };
