@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/Exercises.jsx - SIMPLIFIED VERSION
+// frontend/src/pages/admin/Exercises.jsx - COMPLETE FIXED VERSION
 import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
 import ExerciseModal from '../../components/exercise/ExerciseModal';
@@ -57,17 +57,46 @@ const AdminExercises = () => {
     setCurrentPage(1);
   }, [exercises, searchTerm, selectedCategory, statusFilter]);
 
+  // FIXED: Fetch all exercises with video debugging
   const fetchAllExercises = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const params = { limit: 1000, page: 1 };
+      console.log('🔄 Admin fetching exercises with includeInactive...');
+      
+      // FIXED: Admin mode - include inactive with all data
+      const params = { 
+        limit: 1000, 
+        page: 1,
+        includeInactive: true  // Admin can see all exercises
+      };
+
       const result = await exerciseService.getAll(params);
       
       if (result.success) {
         const exercisesData = result.data?.exercises || result.data || [];
-        console.log('✅ Total exercises loaded:', exercisesData.length);
+        
+        // DEBUG: Log video data for troubleshooting
+        console.log('🎥 VIDEO DATA DEBUG:');
+        exercisesData.forEach(exercise => {
+          if (exercise.youtubeUrl || exercise.youtubeVideoId) {
+            console.log(`  📹 ${exercise.name} (${exercise.isActive ? 'ACTIVE' : 'INACTIVE'}):`, {
+              youtubeUrl: exercise.youtubeUrl,
+              youtubeVideoId: exercise.youtubeVideoId,
+              isActive: exercise.isActive
+            });
+          }
+        });
+        
+        console.log('✅ All exercises loaded for admin:', {
+          total: exercisesData.length,
+          active: exercisesData.filter(ex => ex.isActive === true).length,
+          inactive: exercisesData.filter(ex => ex.isActive === false).length,
+          withVideo: exercisesData.filter(ex => ex.youtubeUrl).length,
+          activeWithVideo: exercisesData.filter(ex => ex.youtubeUrl && ex.isActive === true).length,
+          inactiveWithVideo: exercisesData.filter(ex => ex.youtubeUrl && ex.isActive === false).length
+        });
         
         setExercises(exercisesData);
         calculateStats(exercisesData);
@@ -84,6 +113,7 @@ const AdminExercises = () => {
     }
   };
 
+  // FIXED: Filter exercises with proper status handling
   const filterExercises = () => {
     let filtered = [...exercises];
 
@@ -99,27 +129,45 @@ const AdminExercises = () => {
       filtered = filtered.filter(exercise => exercise.category === selectedCategory);
     }
 
+    // FIXED: Status filter with explicit boolean comparison
     if (statusFilter !== 'All') {
       if (statusFilter === 'Active') {
-        filtered = filtered.filter(exercise => exercise.isActive !== false);
+        filtered = filtered.filter(exercise => exercise.isActive === true);
       } else if (statusFilter === 'Inactive') {
         filtered = filtered.filter(exercise => exercise.isActive === false);
       }
     }
 
+    console.log('🔍 Filter applied:', {
+      search: searchTerm,
+      category: selectedCategory,
+      status: statusFilter,
+      resultCount: filtered.length
+    });
+
     setFilteredExercises(filtered);
   };
 
+  // FIXED: Calculate stats with proper boolean comparison
   const calculateStats = (exercisesData) => {
-    const active = exercisesData.filter(ex => ex.isActive !== false).length;
+    // FIXED: Explicit boolean comparison for accurate counts
+    const active = exercisesData.filter(ex => ex.isActive === true).length;
     const inactive = exercisesData.filter(ex => ex.isActive === false).length;
-    const withVideo = exercisesData.filter(ex => ex.youtubeUrl).length;
-    const withoutVideo = exercisesData.length - withVideo;
-    const videoPercentage = exercisesData.length > 0 ? Math.round((withVideo / exercisesData.length) * 100) : 0;
+    const withVideo = exercisesData.filter(ex => ex.youtubeUrl && ex.isActive === true).length;
+    const withoutVideo = active - withVideo;
+    const videoPercentage = active > 0 ? Math.round((withVideo / active) * 100) : 0;
     
     const byCategory = {};
     exercisesData.forEach(exercise => {
       byCategory[exercise.category] = (byCategory[exercise.category] || 0) + 1;
+    });
+
+    console.log('📊 Stats calculated:', {
+      total: exercisesData.length,
+      active,
+      inactive,
+      withVideo,
+      videoPercentage
     });
 
     setStats({
@@ -201,18 +249,60 @@ const AdminExercises = () => {
     }
   };
 
+  // FIXED: Toggle status handler with better error handling
   const handleToggleStatus = async (exercise) => {
     try {
+      console.log('🔄 Toggling status for exercise:', exercise.name, 'Current status:', exercise.isActive);
+      
+      // Show loading state
+      const loadingToast = toast.loading(`${exercise.isActive ? 'Menonaktifkan' : 'Mengaktifkan'} gerakan...`);
+      
       const result = await exerciseService.toggleStatus(exercise.id);
       
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+      
       if (result.success) {
-        toast.success(`Gerakan ${exercise.isActive ? 'dinonaktifkan' : 'diaktifkan'}`);
+        const newStatus = result.data?.isActive;
+        const message = newStatus ? 'Gerakan berhasil diaktifkan' : 'Gerakan berhasil dinonaktifkan';
+        
+        toast.success(message);
+        console.log('✅ Toggle successful, new status:', newStatus);
+        
+        // Refresh the exercise list to get updated data
+        await fetchAllExercises();
+      } else {
+        console.error('❌ Toggle failed:', result.message);
+        toast.error(result.message || 'Gagal mengubah status gerakan');
+      }
+    } catch (error) {
+      console.error('❌ Toggle status error:', error);
+      toast.error('Gagal mengubah status gerakan');
+    }
+  };
+
+  // FIXED: Set specific status handler
+  const handleSetStatus = async (exercise, newStatus) => {
+    try {
+      console.log('🔄 Setting status for exercise:', exercise.name, 'to:', newStatus);
+      
+      const loadingToast = toast.loading(`${newStatus ? 'Mengaktifkan' : 'Menonaktifkan'} gerakan...`);
+      
+      const result = await exerciseService.setStatus(exercise.id, newStatus);
+      
+      toast.dismiss(loadingToast);
+      
+      if (result.success) {
+        const message = newStatus ? 'Gerakan berhasil diaktifkan' : 'Gerakan berhasil dinonaktifkan';
+        toast.success(message);
+        
+        // Refresh the exercise list
         await fetchAllExercises();
       } else {
         toast.error(result.message || 'Gagal mengubah status gerakan');
       }
     } catch (error) {
-      console.error('Toggle status error:', error);
+      console.error('❌ Set status error:', error);
       toast.error('Gagal mengubah status gerakan');
     }
   };
@@ -238,9 +328,21 @@ const AdminExercises = () => {
   };
 
   const extractVideoId = (url) => {
-    if (!url) return null;
+    if (!url) {
+      console.warn('⚠️ No URL provided for video ID extraction');
+      return null;
+    }
+    
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    return match ? match[1] : null;
+    const videoId = match ? match[1] : null;
+    
+    if (!videoId) {
+      console.warn('⚠️ Could not extract video ID from URL:', url);
+    } else {
+      console.log('✅ Video ID extracted:', videoId, 'from URL:', url);
+    }
+    
+    return videoId;
   };
 
   const clearAllFilters = () => {
@@ -310,24 +412,24 @@ const AdminExercises = () => {
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Stats Cards - IMPROVED */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="text-sm font-medium text-blue-900">Total Gerakan</h3>
             <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
-            <p className="text-xs text-blue-600">gerakan tersedia</p>
+            <p className="text-xs text-blue-600">semua gerakan</p>
           </div>
           
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <h3 className="text-sm font-medium text-green-900">Aktif</h3>
             <p className="text-2xl font-bold text-green-800">{stats.active}</p>
-            <p className="text-xs text-green-600">dapat dilihat user</p>
+            <p className="text-xs text-green-600">terlihat user</p>
           </div>
           
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h3 className="text-sm font-medium text-red-900">Nonaktif</h3>
             <p className="text-2xl font-bold text-red-800">{stats.inactive}</p>
-            <p className="text-xs text-red-600">disembunyikan</p>
+            <p className="text-xs text-red-600">tersembunyi</p>
           </div>
           
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -335,9 +437,16 @@ const AdminExercises = () => {
             <p className="text-2xl font-bold text-purple-800">{stats.withVideo}</p>
             <p className="text-xs text-purple-600">{stats.videoPercentage}% coverage</p>
           </div>
+
+          {/* NEW: Filter Result Card */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-orange-900">Hasil Filter</h3>
+            <p className="text-2xl font-bold text-orange-800">{filteredExercises.length}</p>
+            <p className="text-xs text-orange-600">dari {stats.total} total</p>
+          </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters - IMPROVED */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Search */}
@@ -362,36 +471,79 @@ const AdminExercises = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category}>
+                    {category === 'All' ? 'Semua Kategori' : category}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* Status Filter */}
+            {/* Status Filter - IMPROVED */}
             <div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
+                <option value="All">Semua Status</option>
+                <option value="Active">✓ Aktif</option>
+                <option value="Inactive">○ Nonaktif</option>
               </select>
             </div>
           </div>
 
-          {/* Clear Filters */}
-          {(searchTerm || selectedCategory !== 'All' || statusFilter !== 'All') && (
-            <div className="mt-4">
+          {/* Filter Summary - NEW */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {searchTerm && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                Pencarian: "{searchTerm}"
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="ml-1 text-blue-600 hover:text-blue-800"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            
+            {selectedCategory !== 'All' && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                Kategori: {selectedCategory}
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className="ml-1 text-green-600 hover:text-green-800"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            
+            {statusFilter !== 'All' && (
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                statusFilter === 'Active' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                Status: {statusFilter === 'Active' ? 'Aktif' : 'Nonaktif'}
+                <button
+                  onClick={() => setStatusFilter('All')}
+                  className={statusFilter === 'Active' ? 'ml-1 text-green-600 hover:text-green-800' : 'ml-1 text-red-600 hover:text-red-800'}
+                >
+                  ×
+                </button>
+              </span>
+            )}
+
+            {/* Clear All Filters */}
+            {(searchTerm || selectedCategory !== 'All' || statusFilter !== 'All') && (
               <button
                 onClick={clearAllFilters}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
+                className="text-sm text-gray-600 hover:text-gray-800 underline"
               >
                 Hapus semua filter
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Results Info */}
@@ -404,36 +556,74 @@ const AdminExercises = () => {
           </p>
         </div>
 
-        {/* Exercise Grid */}
+        {/* Exercise Grid - WITH VIDEO DEBUG */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
           {currentExercises.map((exercise) => {
+            // DEBUG: Log exercise data saat render
             const videoId = extractVideoId(exercise.youtubeUrl);
+            
+            console.log(`🔍 Rendering exercise: ${exercise.name}`, {
+              id: exercise.id,
+              isActive: exercise.isActive,
+              youtubeUrl: exercise.youtubeUrl,
+              youtubeVideoId: exercise.youtubeVideoId,
+              extractedVideoId: videoId,
+              hasVideo: !!exercise.youtubeUrl
+            });
             
             return (
               <div key={exercise.id} className="bg-white rounded-lg shadow border border-gray-200 hover:shadow-lg transition-shadow duration-200">
-                {/* Video Thumbnail */}
+                {/* Video Thumbnail - ALWAYS SHOW FOR ADMIN */}
                 <div className="aspect-video bg-gray-200 rounded-t-lg flex items-center justify-center relative overflow-hidden">
                   {exercise.youtubeUrl && videoId ? (
                     <div className="relative w-full h-full">
+                      {/* DEBUG: Log when rendering video thumbnail */}
+                      {console.log(`🎥 Rendering video thumbnail for ${exercise.name} (${exercise.isActive ? 'ACTIVE' : 'INACTIVE'})`)}
+                      
                       <img
                         src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                         alt={exercise.name}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover transition-opacity duration-200 ${
+                          exercise.isActive === false ? 'opacity-75' : 'opacity-100'
+                        }`}
                         onError={(e) => {
+                          console.warn(`⚠️ Thumbnail failed for ${exercise.name}, trying hqdefault`);
                           e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                         }}
+                        onLoad={() => {
+                          console.log(`✅ Thumbnail loaded for ${exercise.name}`);
+                        }}
                       />
-                      <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                      
+                      <div className={`absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center ${
+                        exercise.isActive === false 
+                          ? 'opacity-100' 
+                          : 'opacity-0 hover:opacity-100'
+                      } transition-opacity duration-200`}>
                         <PlayIcon className="h-12 w-12 text-white opacity-80" />
+                        {exercise.isActive === false && (
+                          <div className="absolute bottom-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                            Inactive
+                          </div>
+                        )}
                       </div>
+                      
                       <div className="absolute top-2 right-2">
-                        <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                        <span className={`text-white text-xs px-2 py-1 rounded-full ${
+                          exercise.isActive === false ? 'bg-gray-600' : 'bg-green-500'
+                        }`}>
                           Video
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center">
+                    <div className={`text-center ${exercise.isActive === false ? 'opacity-60' : ''}`}>
+                      {/* DEBUG: Log when no video */}
+                      {console.log(`❌ No video for ${exercise.name}:`, { 
+                        youtubeUrl: exercise.youtubeUrl, 
+                        videoId 
+                      })}
+                      
                       <PlayIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                       <p className="text-sm text-gray-500">Tidak ada video</p>
                     </div>
@@ -442,17 +632,18 @@ const AdminExercises = () => {
                   {/* Status Badge */}
                   <div className="absolute top-2 left-2">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      exercise.isActive !== false 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
+                      exercise.isActive === true 
+                        ? 'bg-green-100 text-green-800 border border-green-200' 
+                        : 'bg-red-100 text-red-800 border border-red-200'
                     }`}>
-                      {exercise.isActive !== false ? 'Aktif' : 'Nonaktif'}
+                      {exercise.isActive === true ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </div>
                 </div>
 
-                {/* Exercise Info */}
+                {/* Rest of the card content... */}
                 <div className="p-4">
+                  {/* Exercise info content stays the same */}
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
                       {exercise.name}
@@ -509,12 +700,12 @@ const AdminExercises = () => {
                     <button
                       onClick={() => handleToggleStatus(exercise)}
                       className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200 ${
-                        exercise.isActive !== false
+                        exercise.isActive === true
                           ? 'bg-red-100 text-red-700 hover:bg-red-200'
                           : 'bg-green-100 text-green-700 hover:bg-green-200'
                       }`}
                     >
-                      {exercise.isActive !== false ? 'Nonaktifkan' : 'Aktifkan'}
+                      {exercise.isActive === true ? 'Nonaktifkan' : 'Aktifkan'}
                     </button>
                   </div>
                 </div>
@@ -603,27 +794,6 @@ const AdminExercises = () => {
             </button>
           </div>
         )}
-
-        {/* Category Summary */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {categories.slice(1).map(category => {
-            const count = stats.byCategory[category] || 0;
-            const activeCount = exercises.filter(ex => ex.category === category && ex.isActive !== false).length;
-            const inactiveCount = count - activeCount;
-            
-            return (
-              <div key={category} className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                <div className={`inline-block px-2 py-1 text-xs font-medium rounded mb-2 ${getCategoryColor(category)}`}>
-                  {category}
-                </div>
-                <div className="text-lg font-bold text-gray-900">{count}</div>
-                <div className="text-sm text-gray-500">
-                  {activeCount} aktif, {inactiveCount} nonaktif
-                </div>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Exercise Modal */}
         <ExerciseModal

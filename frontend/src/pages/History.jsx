@@ -268,11 +268,6 @@ const History = () => {
             <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
               Riwayat Konsultasi
             </h1>
-            <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2">
-              <p className="text-sm text-green-800">
-                ✅ <strong>Data Real-time:</strong> Menampilkan data konsultasi dari database (bukan mock-up)
-              </p>
-            </div>
           </div>
           
           {/* Search */}
@@ -517,54 +512,6 @@ const History = () => {
             </div>
           </div>
         )}
-
-        {/* Summary Card with Real Data */}
-        {consultations.length > 0 && (
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Ringkasan Konsultasi</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800">
-              <div>
-                <strong>Total konsultasi:</strong> {pagination.total || consultations.length}
-              </div>
-              <div>
-                <strong>Program aktif:</strong> {consultations.filter(c => c && c.status === 'active').length}
-              </div>
-              <div>
-                <strong>Program terbanyak:</strong> {
-                  (() => {
-                    if (consultations.length === 0) return 'N/A';
-                    
-                    const programCounts = consultations.reduce((acc, curr) => {
-                      if (curr && curr.program && curr.program.code) {
-                        acc[curr.program.code] = (acc[curr.program.code] || 0) + 1;
-                      }
-                      return acc;
-                    }, {});
-                    
-                    const entries = Object.entries(programCounts);
-                    if (entries.length === 0) return 'N/A';
-                    
-                    const mostUsed = entries.sort(([,a], [,b]) => b - a)[0];
-                    return mostUsed ? mostUsed[0] : 'N/A';
-                  })()
-                }
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* API Integration Info */}
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-          <p className="text-sm text-green-800">
-            💡 <strong>Real-time Data:</strong> Halaman ini menggunakan data real dari backend API consultation endpoint, 
-            bukan mock-up data. Data langsung tersinkronisasi dengan database PostgreSQL.
-            {error && (
-              <span className="block mt-1 text-red-600">
-                ⚠️ Saat ini menggunakan fallback karena: {error}
-              </span>
-            )}
-          </p>
-        </div>
       </div>
     </SidebarLayout>
   );

@@ -21,6 +21,7 @@ const Exercise = sequelize.define('Exercise', {
       }
     }
   },
+  // SIMPLIFIED CATEGORIES - Only 3 instead of 5
   category: {
     type: DataTypes.ENUM('Angkat Beban', 'Kardio', 'Other'),
     allowNull: false,
@@ -34,7 +35,7 @@ const Exercise = sequelize.define('Exercise', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  // YouTube integration fields
+  // YouTube integration fields - KEPT
   youtubeUrl: {
     type: DataTypes.STRING(500),
     allowNull: true,
@@ -53,12 +54,19 @@ const Exercise = sequelize.define('Exercise', {
     type: DataTypes.STRING(20),
     allowNull: true
   },
-  // Admin fields
+  // Admin fields - KEPT
+  // Admin fields - FIXED with explicit defaults
   isActive: {
     type: DataTypes.BOOLEAN,
-    defaultValue: true
+    allowNull: false,  // FIXED: Don't allow null
+    defaultValue: true,  // FIXED: Explicit default
+    validate: {
+      notNull: {
+        msg: 'isActive field is required'
+      }
+    }
   },
-  // Created by admin tracking
+  // Created by admin tracking - KEPT
   createdBy: {
     type: DataTypes.INTEGER,
     allowNull: true,
@@ -74,7 +82,7 @@ const Exercise = sequelize.define('Exercise', {
       fields: ['category']
     },
     {
-      fields: ['is_active']
+      fields: ['is_active']  // FIXED: Index for better performance
     },
     {
       fields: ['name']
@@ -88,6 +96,11 @@ const Exercise = sequelize.define('Exercise', {
   ],
   hooks: {
     beforeCreate: async (exercise) => {
+      // FIXED: Ensure isActive has a value
+      if (exercise.isActive === undefined || exercise.isActive === null) {
+        exercise.isActive = true;
+      }
+      
       // Extract YouTube video ID if URL is provided
       if (exercise.youtubeUrl && !exercise.youtubeVideoId) {
         try {
@@ -116,11 +129,22 @@ const Exercise = sequelize.define('Exercise', {
       } else if (exercise.changed('youtubeUrl') && !exercise.youtubeUrl) {
         exercise.youtubeVideoId = null;
       }
+    },
+    beforeValidate: (exercise) => {
+      // FIXED: Ensure isActive is boolean
+      if (exercise.isActive === undefined || exercise.isActive === null) {
+        exercise.isActive = true;
+      }
+      
+      // Convert string boolean to actual boolean
+      if (typeof exercise.isActive === 'string') {
+        exercise.isActive = exercise.isActive === 'true';
+      }
     }
   }
 });
 
-// Instance methods
+// Instance methods - SIMPLIFIED
 Exercise.prototype.hasVideo = function() {
   return !!(this.youtubeUrl);
 };
@@ -154,7 +178,7 @@ Exercise.prototype.toJSON = function() {
   };
 };
 
-// Static methods
+// Static methods - UPDATED FOR 3 CATEGORIES
 Exercise.getCategoryColor = function(category) {
   const colors = {
     'Angkat Beban': 'bg-blue-100 text-blue-800',
@@ -241,6 +265,43 @@ Exercise.updateYouTubeUrl = async function(id, youtubeUrl) {
     console.error('Error updating YouTube URL:', error);
     throw error;
   }
+};
+
+// SIMPLIFIED CATEGORY METHODS - Only 3 categories
+Exercise.getAvailableCategories = function() {
+  return ['Angkat Beban', 'Kardio', 'Other'];
+};
+
+Exercise.getCategoryStats = async function() {
+  const categories = this.getAvailableCategories();
+  const stats = {};
+  
+  for (const category of categories) {
+    const total = await this.count({
+      where: { category }
+    });
+    const active = await this.count({
+      where: { category, isActive: true }
+    });
+    const withVideo = await this.count({
+      where: { 
+        category, 
+        isActive: true,
+        youtubeUrl: { [sequelize.Sequelize.Op.ne]: null }
+      }
+    });
+    
+    stats[category] = {
+      total,
+      active,
+      inactive: total - active,
+      withVideo,
+      withoutVideo: active - withVideo,
+      videoPercentage: active > 0 ? Math.round((withVideo / active) * 100) : 0
+    };
+  }
+  
+  return stats;
 };
 
 export default Exercise;

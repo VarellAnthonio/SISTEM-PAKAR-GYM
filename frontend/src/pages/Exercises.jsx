@@ -1,4 +1,4 @@
-// frontend/src/pages/Exercises.jsx - SIMPLIFIED VERSION
+// frontend/src/pages/Exercises.jsx - CLEAN VERSION WITHOUT QUICK STATS
 import { useState, useEffect } from 'react';
 import SidebarLayout from '../components/common/SidebarLayout';
 import ExerciseModal from '../components/exercise/ExerciseModal';
@@ -7,7 +7,6 @@ import {
   MagnifyingGlassIcon, 
   EyeIcon,
   StarIcon,
-  FireIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { exerciseService } from '../services/exercise';
@@ -30,13 +29,8 @@ const Exercises = () => {
   const [exercisesPerPage] = useState(12);
   
   const [favorites, setFavorites] = useState(new Set());
-  const [stats, setStats] = useState({
-    total: 0,
-    withVideo: 0,
-    byCategory: {}
-  });
 
-  // SIMPLIFIED CATEGORIES
+  // SIMPLIFIED CATEGORIES (3 instead of 5)
   const categories = ['All', 'Angkat Beban', 'Kardio', 'Other'];
 
   useEffect(() => {
@@ -72,7 +66,6 @@ const Exercises = () => {
         console.log('✅ Active exercises loaded:', activeExercises.length);
         
         setExercises(activeExercises);
-        calculateStats(activeExercises);
       } else {
         setError(result.message || 'Failed to load exercises');
         toast.error(result.message || 'Failed to load exercises');
@@ -104,21 +97,6 @@ const Exercises = () => {
 
     console.log('🔍 Filtered exercises:', filtered.length, 'from total:', exercises.length);
     setFilteredExercises(filtered);
-  };
-
-  const calculateStats = (exercisesData) => {
-    const withVideo = exercisesData.filter(ex => ex.youtubeUrl).length;
-    const byCategory = {};
-
-    exercisesData.forEach(exercise => {
-      byCategory[exercise.category] = (byCategory[exercise.category] || 0) + 1;
-    });
-
-    setStats({
-      total: exercisesData.length,
-      withVideo,
-      byCategory
-    });
   };
 
   const loadFavorites = () => {
@@ -231,7 +209,7 @@ const Exercises = () => {
   return (
     <SidebarLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header - CLEAN VERSION */}
         <div className="mb-6">
           <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
             Gerakan Latihan
@@ -239,52 +217,9 @@ const Exercises = () => {
           <p className="text-gray-600">
             Koleksi lengkap gerakan latihan dengan tutorial video - Total: {exercises.length} gerakan
           </p>
-          
-          {/* Quick Stats */}
-          <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex items-center">
-                <PlayIcon className="h-5 w-5 text-blue-600 mr-2" />
-                <div>
-                  <p className="text-sm font-medium text-blue-900">{stats.total}</p>
-                  <p className="text-xs text-blue-600">Total Gerakan</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center">
-                <PlayIcon className="h-5 w-5 text-green-600 mr-2" />
-                <div>
-                  <p className="text-sm font-medium text-green-900">{stats.withVideo}</p>
-                  <p className="text-xs text-green-600">Dengan Video</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-              <div className="flex items-center">
-                <StarIcon className="h-5 w-5 text-purple-600 mr-2" />
-                <div>
-                  <p className="text-sm font-medium text-purple-900">{favorites.size}</p>
-                  <p className="text-xs text-purple-600">Favorit</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-              <div className="flex items-center">
-                <FireIcon className="h-5 w-5 text-orange-600 mr-2" />
-                <div>
-                  <p className="text-sm font-medium text-orange-900">{filteredExercises.length}</p>
-                  <p className="text-xs text-orange-600">Hasil Filter</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters - CLEAN VERSION */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Search */}
@@ -340,7 +275,7 @@ const Exercises = () => {
           </p>
         </div>
 
-        {/* Exercise Grid */}
+        {/* Exercise Grid - CLEAN VERSION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
           {currentExercises.map((exercise) => {
             const videoId = extractVideoId(exercise.youtubeUrl);
@@ -395,7 +330,7 @@ const Exercises = () => {
                   </button>
                 </div>
 
-                {/* Exercise Info */}
+                {/* Exercise Info - CLEAN VERSION */}
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2 flex-1">
@@ -410,6 +345,7 @@ const Exercises = () => {
                     </button>
                   </div>
 
+                  {/* Category Badge */}
                   <div className="flex items-center space-x-2 mb-3">
                     <span className={`px-2 py-1 text-xs font-medium rounded border ${getCategoryColor(exercise.category)}`}>
                       {exercise.category}
@@ -511,34 +447,6 @@ const Exercises = () => {
             </button>
           </div>
         )}
-
-        {/* Category Summary */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {categories.slice(1).map(category => {
-            const count = stats.byCategory[category] || 0;
-            
-            return (
-              <div key={category} className="bg-white border border-gray-200 rounded-lg p-4 text-center hover:shadow-md transition-shadow duration-200">
-                <div className={`inline-block px-2 py-1 text-xs font-medium rounded mb-2 ${getCategoryColor(category)}`}>
-                  {category}
-                </div>
-                <div className="text-lg font-bold text-gray-900">{count}</div>
-                <div className="text-sm text-gray-500">
-                  gerakan tersedia
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    setCurrentPage(1);
-                  }}
-                  className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Lihat Semua →
-                </button>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Exercise Modal */}
         <ExerciseModal

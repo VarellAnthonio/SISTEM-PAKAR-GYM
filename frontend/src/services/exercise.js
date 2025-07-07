@@ -1,4 +1,4 @@
-// frontend/src/services/exercise.js - UPDATED WITH ROBUST YOUTUBE HANDLING
+// frontend/src/services/exercise.js - SIMPLIFIED VERSION
 import { apiService } from './api';
 import { extractVideoId, validateYouTubeUrl, processYouTubeUrl } from '../utils/youtubeHelper';
 
@@ -71,7 +71,7 @@ export const exerciseService = {
     }
   },
 
-  // Create new exercise (admin) - ENHANCED YOUTUBE VALIDATION
+  // Create new exercise (admin) - SIMPLIFIED TO 4 FIELDS
   create: async (exerciseData) => {
     try {
       console.log('🔄 Creating exercise:', exerciseData);
@@ -100,7 +100,16 @@ export const exerciseService = {
         });
       }
       
-      const response = await apiService.exercises.create(exerciseData);
+      // SIMPLIFIED DATA - only 4 main fields
+      const simplifiedData = {
+        name: exerciseData.name,
+        category: exerciseData.category,
+        description: exerciseData.description || null,
+        youtubeUrl: exerciseData.youtubeUrl || null,
+        isActive: exerciseData.isActive !== undefined ? exerciseData.isActive : true
+      };
+      
+      const response = await apiService.exercises.create(simplifiedData);
       return {
         success: true,
         data: response.data.data,
@@ -118,7 +127,7 @@ export const exerciseService = {
     }
   },
 
-  // Update exercise (admin) - ENHANCED YOUTUBE VALIDATION
+  // Update exercise (admin) - SIMPLIFIED TO 4 FIELDS
   update: async (id, exerciseData) => {
     try {
       console.log('🔄 Updating exercise:', id, exerciseData);
@@ -147,7 +156,15 @@ export const exerciseService = {
         });
       }
       
-      const response = await apiService.exercises.update(id, exerciseData);
+      // SIMPLIFIED DATA - only allow 4 main fields to be updated
+      const simplifiedData = {};
+      if (exerciseData.name !== undefined) simplifiedData.name = exerciseData.name;
+      if (exerciseData.category !== undefined) simplifiedData.category = exerciseData.category;
+      if (exerciseData.description !== undefined) simplifiedData.description = exerciseData.description;
+      if (exerciseData.youtubeUrl !== undefined) simplifiedData.youtubeUrl = exerciseData.youtubeUrl;
+      if (exerciseData.isActive !== undefined) simplifiedData.isActive = exerciseData.isActive;
+      
+      const response = await apiService.exercises.update(id, simplifiedData);
       return {
         success: true,
         data: response.data.data,
@@ -184,10 +201,15 @@ export const exerciseService = {
     }
   },
 
-  // Toggle exercise status (admin)
+  // Toggle exercise status (admin) - FIXED VERSION
   toggleStatus: async (id) => {
     try {
+      console.log('🔄 Toggling exercise status for ID:', id);
+      
       const response = await apiService.exercises.toggleStatus(id);
+      
+      console.log('✅ Toggle status response:', response.data);
+      
       return {
         success: true,
         data: response.data.data,
@@ -203,42 +225,111 @@ export const exerciseService = {
     }
   },
 
-  // Get exercise statistics (admin)
-  getStats: async () => {
+  // NEW: Set exercise status directly
+  setStatus: async (id, isActive) => {
     try {
-      const response = await apiService.exercises.getStats();
+      console.log('🔄 Setting exercise status for ID:', id, 'to:', isActive);
+      
+      const response = await apiService.exercises.updateStatus(id, { isActive });
+      
+      console.log('✅ Set status response:', response.data);
+      
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('❌ Exercise setStatus error:', error);
+      const message = error.response?.data?.message || 'Failed to set exercise status';
+      return {
+        success: false,
+        message
+      };
+    }
+  },
+
+  // FIXED: Get all exercises with proper admin/user context
+  getAll: async (params = {}) => {
+    try {
+      console.log('🔄 Exercise service getAll called with params:', params);
+      
+      // FIXED: Admin context handling
+      const requestParams = { ...params };
+      
+      // If admin wants to see inactive exercises
+      if (params.includeInactive === true) {
+        requestParams.includeInactive = 'true';
+        console.log('👨‍💼 Admin mode: Including inactive exercises with full data');
+      } else {
+        // Regular user mode - active only
+        requestParams.active = true;
+        console.log('👤 User mode: Active exercises only');
+      }
+      
+      const response = await apiService.exercises.getAll(requestParams);
+      console.log('📥 Exercise API response:', response);
+      
+      // FIXED: Ensure video data is preserved
+      const exercises = response.data.data?.exercises || response.data.exercises || response.data || [];
+      
+      console.log('🎥 Video data check:', {
+        total: exercises.length,
+        withVideo: exercises.filter(ex => ex.youtubeUrl).length,
+        withVideoId: exercises.filter(ex => ex.youtubeVideoId).length,
+        activeCount: exercises.filter(ex => ex.isActive === true).length,
+        inactiveCount: exercises.filter(ex => ex.isActive === false).length
+      });
+      
       return {
         success: true,
         data: response.data.data || response.data
       };
     } catch (error) {
-      console.error('❌ Exercise getStats error:', error);
-      const message = error.response?.data?.message || 'Failed to get exercise statistics';
+      console.error('❌ Exercise getAll error:', error);
+      const message = error.response?.data?.message || 'Failed to get exercises';
       return {
         success: false,
         message,
-        data: {
-          total: 0,
-          active: 0,
-          inactive: 0,
-          withVideo: 0,
-          withoutVideo: 0,
-          videoPercentage: 0,
-          categoryStats: [],
-          difficultyStats: []
+        data: { 
+          exercises: [], 
+          pagination: { 
+            total: 0, 
+            page: 1, 
+            totalPages: 0,
+            limit: params.limit || 10
+          } 
         }
       };
     }
   },
 
-  // Utility methods - ENHANCED WITH ROBUST YOUTUBE HANDLING
+  // Get categories
+  getCategories: async () => {
+    try {
+      const response = await apiService.exercises.getCategories();
+      return {
+        success: true,
+        data: response.data.data || response.data
+      };
+    } catch (error) {
+      console.error('❌ Exercise getCategories error:', error);
+      return {
+        success: false,
+        message: 'Failed to get categories',
+        data: []
+      };
+    }
+  },
+
+  // Utility methods - SIMPLIFIED
   utils: {
-    // Extract YouTube video ID - USE ROBUST VERSION
+    // Extract YouTube video ID
     extractVideoId: (url) => {
       return extractVideoId(url);
     },
 
-    // Validate YouTube URL - USE ROBUST VERSION
+    // Validate YouTube URL
     validateYouTubeUrl: (url) => {
       return validateYouTubeUrl(url);
     },
@@ -248,29 +339,17 @@ export const exerciseService = {
       return processYouTubeUrl(url);
     },
 
-    // Get category display color
+    // Get category display color - SIMPLIFIED TO 3 CATEGORIES
     getCategoryColor: (category) => {
       const colors = {
-        'Push': 'bg-red-100 text-red-800 border-red-200',
-        'Pull': 'bg-blue-100 text-blue-800 border-blue-200',
-        'Leg': 'bg-green-100 text-green-800 border-green-200',
-        'Full Body': 'bg-purple-100 text-purple-800 border-purple-200',
-        'Cardio': 'bg-orange-100 text-orange-800 border-orange-200'
+        'Angkat Beban': 'bg-blue-100 text-blue-800 border-blue-200',
+        'Kardio': 'bg-red-100 text-red-800 border-red-200',
+        'Other': 'bg-green-100 text-green-800 border-green-200'
       };
       return colors[category] || 'bg-gray-100 text-gray-800 border-gray-200';
     },
 
-    // Get difficulty display color
-    getDifficultyColor: (difficulty) => {
-      const colors = {
-        'Beginner': 'bg-green-100 text-green-800',
-        'Intermediate': 'bg-yellow-100 text-yellow-800',
-        'Advanced': 'bg-red-100 text-red-800'
-      };
-      return colors[difficulty] || 'bg-gray-100 text-gray-800';
-    },
-
-    // Process exercise data for display
+    // Process exercise data for display - SIMPLIFIED
     processExerciseData: (exercise) => {
       if (!exercise) return null;
       
@@ -281,13 +360,12 @@ export const exerciseService = {
         videoId,
         embedUrl: videoId ? `https://www.youtube.com/embed/${videoId}` : null,
         thumbnailUrl: videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null,
-        hasVideo: !!(exercise.youtubeUrl || exercise.videoUrl),
-        categoryColor: this.getCategoryColor(exercise.category),
-        difficultyColor: this.getDifficultyColor(exercise.difficulty)
+        hasVideo: !!(exercise.youtubeUrl),
+        categoryColor: this.getCategoryColor(exercise.category)
       };
     },
 
-    // Validate exercise form data - ENHANCED YOUTUBE VALIDATION
+    // Validate exercise form data - SIMPLIFIED TO 4 FIELDS
     validateExerciseData: (data) => {
       const errors = [];
       
@@ -299,7 +377,13 @@ export const exerciseService = {
         errors.push('Category is required');
       }
       
-      // Enhanced YouTube URL validation
+      // Validate category - SIMPLIFIED TO 3 OPTIONS
+      const validCategories = ['Angkat Beban', 'Kardio', 'Other'];
+      if (data.category && !validCategories.includes(data.category)) {
+        errors.push('Invalid category. Valid options: Angkat Beban, Kardio, Other');
+      }
+      
+      // YouTube URL validation
       if (data.youtubeUrl) {
         const youtubeResult = processYouTubeUrl(data.youtubeUrl);
         if (!youtubeResult.isValid) {
@@ -307,17 +391,25 @@ export const exerciseService = {
         }
       }
       
-      if (data.muscleGroups && !Array.isArray(data.muscleGroups)) {
-        errors.push('Muscle groups must be an array');
-      }
-      
-      if (data.equipment && !Array.isArray(data.equipment)) {
-        errors.push('Equipment must be an array');
-      }
-      
       return {
         isValid: errors.length === 0,
         errors
+      };
+    },
+
+    // Get available categories - SIMPLIFIED
+    getAvailableCategories: () => {
+      return ['Angkat Beban', 'Kardio', 'Other'];
+    },
+
+    // Clean exercise data for API - SIMPLIFIED
+    cleanExerciseData: (data) => {
+      return {
+        name: data.name?.trim() || '',
+        category: data.category || '',
+        description: data.description?.trim() || null,
+        youtubeUrl: data.youtubeUrl?.trim() || null,
+        isActive: data.isActive !== undefined ? data.isActive : true
       };
     }
   }

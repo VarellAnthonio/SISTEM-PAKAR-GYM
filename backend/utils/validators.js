@@ -166,7 +166,6 @@ export const updateRuleValidator = [
     })
 ];
 
-// Exercise validators (FULL CRUD)
 export const exerciseValidator = [
   body('name')
     .notEmpty().withMessage('Exercise name is required')
@@ -174,79 +173,20 @@ export const exerciseValidator = [
   
   body('category')
     .notEmpty().withMessage('Exercise category is required')
-    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
+    .isIn(['Angkat Beban', 'Kardio', 'Other']).withMessage('Invalid exercise category. Valid options: Angkat Beban, Kardio, Other'),
   
   body('description')
     .optional()
     .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
   
-  body('instructions')
-    .optional()
-    .isLength({ max: 2000 }).withMessage('Instructions must not exceed 2000 characters'),
-  
-  body('sets')
-    .optional()
-    .isLength({ max: 50 }).withMessage('Sets must not exceed 50 characters'),
-  
-  body('duration')
-    .optional()
-    .isLength({ max: 50 }).withMessage('Duration must not exceed 50 characters'),
-  
-  body('difficulty')
-    .optional()
-    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
-  
   body('youtubeUrl')
     .optional()
     .custom((value) => {
       if (value && value.trim()) {
-        // YouTube URL validation
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+        // YouTube URL validation - SIMPLIFIED PATTERN
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
         if (!youtubeRegex.test(value)) {
           throw new Error('Invalid YouTube URL format');
-        }
-      }
-      return true;
-    }),
-  
-  body('muscleGroups')
-    .optional()
-    .isArray().withMessage('Muscle groups must be an array')
-    .custom((value) => {
-      if (value && Array.isArray(value)) {
-        const validMuscleGroups = [
-          'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms',
-          'Abs', 'Obliques', 'Quadriceps', 'Hamstrings', 'Glutes', 'Calves',
-          'Upper Traps', 'Middle Traps', 'Lower Traps', 'Lats', 'Rhomboids',
-          'Rear Delts', 'Front Delts', 'Side Delts', 'Core'
-        ];
-        
-        const invalidGroups = value.filter(group => !validMuscleGroups.includes(group));
-        if (invalidGroups.length > 0) {
-          throw new Error(`Invalid muscle groups: ${invalidGroups.join(', ')}`);
-        }
-      }
-      return true;
-    }),
-  
-  body('equipment')
-    .optional()
-    .isArray().withMessage('Equipment must be an array')
-    .custom((value) => {
-      if (value && Array.isArray(value)) {
-        const validEquipment = [
-          'Barbell', 'Dumbbell', 'Kettlebell', 'Cable Machine', 'Pull-up Bar',
-          'Bench', 'Incline Bench', 'Decline Bench', 'Squat Rack', 'Leg Press Machine',
-          'Lat Pulldown Machine', 'Seated Row Machine', 'Leg Curl Machine',
-          'Leg Extension Machine', 'Calf Raise Machine', 'Smith Machine',
-          'Treadmill', 'Stationary Bike', 'Elliptical', 'Rowing Machine',
-          'Resistance Bands', 'Bodyweight', 'Medicine Ball', 'Stability Ball',
-          'TRX', 'Battle Ropes', 'Foam Roller', 'Yoga Mat'
-        ];
-        
-        const invalidEquipment = value.filter(equip => !validEquipment.includes(equip));
-        if (invalidEquipment.length > 0) {
-          throw new Error(`Invalid equipment: ${invalidEquipment.join(', ')}`);
         }
       }
       return true;
@@ -264,48 +204,24 @@ export const updateExerciseValidator = [
   
   body('category')
     .optional()
-    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
+    .isIn(['Angkat Beban', 'Kardio', 'Other']).withMessage('Invalid exercise category. Valid options: Angkat Beban, Kardio, Other'),
   
   body('description')
     .optional()
     .isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
   
-  body('instructions')
-    .optional()
-    .isLength({ max: 2000 }).withMessage('Instructions must not exceed 2000 characters'),
-  
-  body('sets')
-    .optional()
-    .isLength({ max: 50 }).withMessage('Sets must not exceed 50 characters'),
-  
-  body('duration')
-    .optional()
-    .isLength({ max: 50 }).withMessage('Duration must not exceed 50 characters'),
-  
-  body('difficulty')
-    .optional()
-    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
-  
   body('youtubeUrl')
     .optional()
     .custom((value) => {
       if (value && value.trim()) {
-        // YouTube URL validation
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+        // YouTube URL validation - SIMPLIFIED PATTERN
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
         if (!youtubeRegex.test(value)) {
           throw new Error('Invalid YouTube URL format');
         }
       }
       return true;
     }),
-  
-  body('muscleGroups')
-    .optional()
-    .isArray().withMessage('Muscle groups must be an array'),
-  
-  body('equipment')
-    .optional()
-    .isArray().withMessage('Equipment must be an array'),
   
   body('isActive')
     .optional()
@@ -317,7 +233,7 @@ export const youtubeUrlValidator = [
   body('url')
     .notEmpty().withMessage('YouTube URL is required')
     .custom((value) => {
-      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
       if (!youtubeRegex.test(value)) {
         throw new Error('Invalid YouTube URL format');
       }
@@ -325,53 +241,14 @@ export const youtubeUrlValidator = [
     })
 ];
 
-// Bulk exercise validator
-export const bulkExerciseValidator = [
-  body('exercises')
-    .isArray({ min: 1 }).withMessage('Exercises must be an array with at least one exercise'),
-  
-  body('exercises.*.name')
-    .notEmpty().withMessage('Each exercise must have a name')
-    .isLength({ min: 2, max: 100 }).withMessage('Exercise name must be between 2 and 100 characters'),
-  
-  body('exercises.*.category')
-    .notEmpty().withMessage('Each exercise must have a category')
-    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid exercise category'),
-  
-  body('exercises.*.difficulty')
-    .optional()
-    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty level'),
-  
-  body('exercises.*.youtubeUrl')
-    .optional()
-    .custom((value) => {
-      if (value && value.trim()) {
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
-        if (!youtubeRegex.test(value)) {
-          throw new Error('Invalid YouTube URL format');
-        }
-      }
-      return true;
-    })
-];
-
-// Search validator
-export const searchValidator = [
+export const exerciseSearchValidator = [
   body('query')
     .optional()
     .isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
   
   body('category')
     .optional()
-    .isIn(['Push', 'Pull', 'Leg', 'Full Body', 'Cardio']).withMessage('Invalid category'),
-  
-  body('difficulty')
-    .optional()
-    .isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid difficulty'),
-  
-  body('muscleGroup')
-    .optional()
-    .isString().withMessage('Muscle group must be a string'),
+    .isIn(['Angkat Beban', 'Kardio', 'Other']).withMessage('Invalid category'),
   
   body('hasVideo')
     .optional()
@@ -452,11 +329,10 @@ export const progressValidator = [
     .isLength({ max: 1000 }).withMessage('Notes must not exceed 1000 characters')
 ];
 
-// Utility functions for validation
 export const sanitizeYouTubeUrl = (url) => {
   if (!url) return null;
   
-  // Extract video ID and create clean URL
+  // Extract video ID and create clean URL - SIMPLIFIED
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (match) {
     return `https://www.youtube.com/watch?v=${match[1]}`;
@@ -473,6 +349,6 @@ export const extractYouTubeVideoId = (url) => {
 };
 
 export const validateYouTubeUrl = (url) => {
-  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(&.*)?$/;
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
   return youtubeRegex.test(url);
 };

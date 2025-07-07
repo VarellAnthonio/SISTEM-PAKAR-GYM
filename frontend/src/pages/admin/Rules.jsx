@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
-// Removed RuleEditModal import - rules are now view-only
-// import RuleEditModal from '../../components/admin/RuleEditModal';
 import { MagnifyingGlassIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { programService } from '../../services/program';
 import { ruleService } from '../../services/rule';
@@ -12,11 +10,6 @@ const AdminRules = () => {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Removed edit-related states
-  // const [showEditModal, setShowEditModal] = useState(false);
-  // const [selectedRule, setSelectedRule] = useState(null);
-  // const [saveLoading, setSaveLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -101,10 +94,6 @@ const AdminRules = () => {
     return program ? `${program.code} - ${program.name}` : 'Program tidak ditemukan';
   };
 
-  // Removed edit-related functions since rules are view-only
-  // const handleEdit = (rule) => { ... }
-  // const handleSave = async (formData) => { ... }
-
   if (loading) {
     return (
       <AdminSidebarLayout>
@@ -122,22 +111,8 @@ const AdminRules = () => {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Rule Configuration</h1>
           <p className="text-gray-600 mt-1">
-            View 10 kombinasi BMI + Body Fat dan program assignment yang sudah optimal
+            10 kombinasi BMI + Body Fat dan program assignment
           </p>
-        </div>
-
-        {/* Quick Info */}
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <CheckCircleIcon className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-medium text-green-900 mb-2">Medical Logic System - Optimal Configuration</h3>
-              <p className="text-sm text-green-800">
-                <strong>View-Only System:</strong> 10 kombinasi BMI+BodyFat sudah optimal secara medis dan tidak perlu diubah. 
-                Setiap kondisi user akan otomatis diarahkan ke program yang tepat melalui forward chaining.
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Stats */}
@@ -289,30 +264,6 @@ const AdminRules = () => {
             </div>
           </div>
         </div>
-
-        {/* Summary */}
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-green-900 mb-2">Medical Logic System Status</h3>
-          <p className="text-sm text-green-800">
-            ✅ {rules.length}/10 kombinasi medis optimal |
-            ✅ Coverage: 100% kondisi user |
-            ✅ Forward chaining operational |
-            ✅ View-only untuk menjaga integritas sistem
-          </p>
-        </div>
-
-        {/* Removed Edit Modal - Rules are now view-only */}
-        {/* 
-        <RuleEditModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          rule={selectedRule}
-          onSave={handleSave}
-          loading={saveLoading}
-          programs={programs}
-          mode="assignment-only"
-        />
-        */}
       </div>
     </AdminSidebarLayout>
   );

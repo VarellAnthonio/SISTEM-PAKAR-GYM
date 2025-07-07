@@ -85,53 +85,36 @@ export const apiService = {
     }
   },
 
-  // Exercises - FULL CRUD with YouTube integration
+  // Exercises - FIXED with proper status management
   exercises: {
     // Public endpoints (for users)
     getAll: (params = {}) => api.get('/exercises', { params }),
     getById: (id) => api.get(`/exercises/${id}`),
     getByCategory: (category) => api.get(`/exercises/category/${category}`),
     getCategories: () => api.get('/exercises/categories'),
-    search: (params = {}) => api.get('/exercises', { params }), // Same as getAll with search params
+    search: (params = {}) => api.get('/exercises', { params }),
     
     // Admin endpoints (full CRUD)
     create: (data) => api.post('/exercises', data),
     update: (id, data) => api.put(`/exercises/${id}`, data),
     delete: (id) => api.delete(`/exercises/${id}`),
-    toggleStatus: (id) => api.patch(`/exercises/${id}/toggle`),
+    
+    // FIXED: Status management endpoints
+    toggleStatus: (id) => api.patch(`/exercises/${id}/toggle`),  // Toggle current status
+    updateStatus: (id, data) => api.patch(`/exercises/${id}/status`, data),  // Set specific status
     
     // Admin statistics and management
     getStats: () => api.get('/exercises/admin/stats'),
-    bulkCreate: (data) => api.post('/exercises/bulk', data),
-    validateYouTube: (url) => api.post('/exercises/validate-youtube', { url }),
-    
-    // Category and metadata management
-    getMuscleGroups: () => api.get('/exercises/muscle-groups'),
-    getEquipment: () => api.get('/exercises/equipment'),
-    
-    // Analytics endpoints
-    getPopular: (params = {}) => api.get('/exercises/popular', { params }),
-    getRecentlyAdded: (params = {}) => api.get('/exercises/recent', { params }),
-    getWithoutVideos: (params = {}) => api.get('/exercises/no-videos', { params }),
     
     // Admin-only endpoints (alternative structure)
     admin: {
       create: (data) => api.post('/exercises', data),
       update: (id, data) => api.put(`/exercises/${id}`, data),
       delete: (id) => api.delete(`/exercises/${id}`),
+      toggleStatus: (id) => api.patch(`/exercises/${id}/toggle`),
+      updateStatus: (id, data) => api.patch(`/exercises/${id}/status`, data),
       getStats: () => api.get('/exercises/admin/stats'),
-      bulkCreate: (data) => api.post('/exercises/bulk', data),
-      validateYouTube: (url) => api.post('/exercises/validate-youtube', { url }),
-      
-      // Category management
       getCategories: () => api.get('/exercises/categories'),
-      getMuscleGroups: () => api.get('/exercises/muscle-groups'),
-      getEquipment: () => api.get('/exercises/equipment'),
-      
-      // Analytics
-      getPopular: (params = {}) => api.get('/exercises/popular', { params }),
-      getRecentlyAdded: (params = {}) => api.get('/exercises/recent', { params }),
-      getWithoutVideos: (params = {}) => api.get('/exercises/no-videos', { params }),
     }
   },
 

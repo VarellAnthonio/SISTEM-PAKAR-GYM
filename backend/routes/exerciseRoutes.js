@@ -1,4 +1,4 @@
-// backend/routes/exerciseRoutes.js
+// backend/routes/exerciseRoutes.js - FIXED VERSION
 import express from 'express';
 import {
   getExercises,
@@ -8,6 +8,7 @@ import {
   updateExercise,
   deleteExercise,
   toggleExerciseStatus,
+  updateExerciseStatus,  // NEW: Direct status update
   getExerciseStats,
   getCategories
 } from '../controllers/exerciseController.js';
@@ -32,6 +33,9 @@ router.get('/admin/stats', authorize('admin'), getExerciseStats);
 router.post('/', authorize('admin'), exerciseValidator, validate, createExercise);
 router.put('/:id', authorize('admin'), updateExerciseValidator, validate, updateExercise);
 router.delete('/:id', authorize('admin'), deleteExercise);
-router.patch('/:id/toggle', authorize('admin'), toggleExerciseStatus);
+
+// FIXED: Status management routes
+router.patch('/:id/toggle', authorize('admin'), toggleExerciseStatus);  // Toggle current status
+router.patch('/:id/status', authorize('admin'), updateExerciseStatus);  // Set specific status
 
 export default router;

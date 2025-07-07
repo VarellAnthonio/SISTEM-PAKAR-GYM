@@ -138,7 +138,7 @@ const Consultation = () => {
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-900 mb-2">Sistem Forward Chaining</h3>
           <p className="text-sm text-blue-800">
-            Data Anda akan diproses menggunakan sistem forward chaining di backend untuk menentukan program yang tepat dari P1-P10 berdasarkan kondisi BMI dan persentase lemak tubuh.
+            Data Anda akan diproses menggunakan sistem forward chaining di backend untuk menentukan program yang tepat berdasarkan kondisi BMI dan persentase lemak tubuh.
           </p>
         </div>
         
@@ -240,61 +240,6 @@ const Consultation = () => {
           </form>
         </div>
 
-        {/* Process Explanation */}
-        <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-green-900 mb-2">Proses Forward Chaining:</h3>
-          <div className="text-sm text-green-800 space-y-1">
-            <p>1. Sistem menghitung BMI dari berat dan tinggi badan Anda</p>
-            <p>2. Menentukan kategori BMI (B1: Underweight, B2: Ideal, B3: Overweight, B4: Obese)</p>
-            <p>3. Menentukan kategori lemak tubuh berdasarkan gender ({user.gender === 'male' ? 'Pria' : 'Wanita'})</p>
-            <p>4. Forward chaining engine memilih program optimal dari P1-P10</p>
-            <p>5. Menampilkan jadwal latihan yang telah diedit admin (real-time dari database)</p>
-          </div>
-        </div>
-
-        {/* Program Categories Info */}
-        <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Program yang Tersedia:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700">
-            <div>
-              <p>• P1: Fat Loss Program</p>
-              <p>• P2: Muscle Gain Program</p>
-              <p>• P3: Weight Loss Program</p>
-              <p>• P4: Extreme Weight Loss</p>
-              <p>• P5: Lean Muscle Program</p>
-            </div>
-            <div>
-              <p>• P6: Strength & Definition</p>
-              <p>• P7: Fat Burning & Toning</p>
-              <p>• P8: Body Recomposition</p>
-              <p>• P9: Beginner Muscle Building</p>
-              <p>• P10: Advanced Strength</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Body Fat Reference */}
-        <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-purple-900 mb-2">
-            Referensi Persentase Lemak ({user.gender === 'male' ? 'Pria' : 'Wanita'}):
-          </h3>
-          <div className="text-sm text-purple-800">
-            {user.gender === 'male' ? (
-              <div className="space-y-1">
-                <p>• Rendah (L1): &lt; 10%</p>
-                <p>• Normal (L2): 10-20%</p>
-                <p>• Tinggi (L3): &gt; 20%</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <p>• Rendah (L1): &lt; 20%</p>
-                <p>• Normal (L2): 20-30%</p>
-                <p>• Tinggi (L3): &gt; 30%</p>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Tips Box */}
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-yellow-900 mb-2">Tips untuk Hasil Optimal:</h3>
@@ -303,7 +248,6 @@ const Consultation = () => {
             <li>• Ukur persentase lemak tubuh menggunakan alat yang tepat</li>
             <li>• Konsultasi dilakukan sebaiknya di pagi hari setelah bangun tidur</li>
             <li>• Gunakan kalkulator kesehatan jika belum tahu persentase lemak tubuh</li>
-            <li>• Jadwal yang ditampilkan adalah hasil edit admin terbaru (real-time)</li>
           </ul>
         </div>
 

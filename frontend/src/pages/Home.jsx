@@ -344,41 +344,6 @@ const Home = () => {
             </div>
           </div>
         </div>
-
-        {/* Quick Navigation */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="text-lg font-medium text-blue-900 mb-4">Navigasi Cepat</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button
-              onClick={() => handleNavigation('/consultation')}
-              className="text-sm text-blue-700 hover:text-blue-900 font-medium p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200 text-center"
-            >
-              <ClipboardDocumentListIcon className="h-5 w-5 mx-auto mb-1" />
-              Konsultasi
-            </button>
-            <button
-              onClick={() => handleNavigation('/calculator')}
-              className="text-sm text-blue-700 hover:text-blue-900 font-medium p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200 text-center"
-            >
-              <CalculatorIcon className="h-5 w-5 mx-auto mb-1" />
-              Kalkulator
-            </button>
-            <button
-              onClick={() => handleNavigation('/history')}
-              className="text-sm text-blue-700 hover:text-blue-900 font-medium p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200 text-center"
-            >
-              <ClockIcon className="h-5 w-5 mx-auto mb-1" />
-              Riwayat
-            </button>
-            <button
-              onClick={() => handleNavigation('/exercises')}
-              className="text-sm text-blue-700 hover:text-blue-900 font-medium p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200 text-center"
-            >
-              <PlayIcon className="h-5 w-5 mx-auto mb-1" />
-              Exercise
-            </button>
-          </div>
-        </div>
       </div>
     </SidebarLayout>
   );
