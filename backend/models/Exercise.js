@@ -1,4 +1,4 @@
-// backend/models/Exercise.js - FIXED VERSION
+// backend/models/Exercise.js - SIMPLIFIED VERSION
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
@@ -13,20 +13,20 @@ const Exercise = sequelize.define('Exercise', {
     allowNull: false,
     validate: {
       notEmpty: {
-        msg: 'Exercise name is required'
+        msg: 'Nama gerakan harus diisi'
       },
       len: {
         args: [2, 100],
-        msg: 'Exercise name must be between 2 and 100 characters'
+        msg: 'Nama gerakan harus antara 2-100 karakter'
       }
     }
   },
   category: {
-    type: DataTypes.ENUM('Push', 'Pull', 'Leg', 'Full Body', 'Cardio'),
+    type: DataTypes.ENUM('Angkat Beban', 'Kardio', 'Other'),
     allowNull: false,
     validate: {
       notEmpty: {
-        msg: 'Exercise category is required'
+        msg: 'Kategori gerakan harus dipilih'
       }
     }
   },
@@ -34,34 +34,17 @@ const Exercise = sequelize.define('Exercise', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  instructions: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  sets: {
-    type: DataTypes.STRING(20),
-    allowNull: true,
-    defaultValue: '3×8-10'
-  },
-  duration: {
-    type: DataTypes.STRING(20),
-    allowNull: true // For cardio exercises
-  },
-  difficulty: {
-    type: DataTypes.ENUM('Beginner', 'Intermediate', 'Advanced'),
-    defaultValue: 'Beginner'
-  },
   // YouTube integration fields
   youtubeUrl: {
     type: DataTypes.STRING(500),
     allowNull: true,
     validate: {
       isUrl: {
-        msg: 'YouTube URL must be a valid URL'
+        msg: 'URL YouTube harus berupa URL yang valid'
       },
       isYouTubeUrl(value) {
         if (value && !value.includes('youtube.com') && !value.includes('youtu.be')) {
-          throw new Error('URL must be a valid YouTube URL');
+          throw new Error('URL harus berupa URL YouTube yang valid');
         }
       }
     }
@@ -70,63 +53,10 @@ const Exercise = sequelize.define('Exercise', {
     type: DataTypes.STRING(20),
     allowNull: true
   },
-  // Legacy fields (keeping for backward compatibility)
-  videoUrl: {
-    type: DataTypes.STRING(500),
-    allowNull: true,
-    validate: {
-      isUrl: {
-        msg: 'Video URL must be a valid URL'
-      }
-    }
-  },
-  videoFileName: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  imageUrl: {
-    type: DataTypes.STRING(500),
-    allowNull: true,
-    validate: {
-      isUrl: {
-        msg: 'Image URL must be a valid URL'
-      }
-    }
-  },
-  imageFileName: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  // Exercise details
-  muscleGroups: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    defaultValue: []
-  },
-  equipment: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    defaultValue: []
-  },
   // Admin fields
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  },
-  // SEO and metadata
-  tags: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    defaultValue: []
-  },
-  // Exercise metrics (optional)
-  caloriesBurned: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    validate: {
-      min: 0,
-      max: 1000
-    }
   },
   // Created by admin tracking
   createdBy: {
@@ -142,9 +72,6 @@ const Exercise = sequelize.define('Exercise', {
   indexes: [
     {
       fields: ['category']
-    },
-    {
-      fields: ['difficulty']
     },
     {
       fields: ['is_active']
@@ -195,29 +122,25 @@ const Exercise = sequelize.define('Exercise', {
 
 // Instance methods
 Exercise.prototype.hasVideo = function() {
-  return !!(this.youtubeUrl || this.videoUrl || this.videoFileName);
+  return !!(this.youtubeUrl);
 };
 
 Exercise.prototype.hasYouTubeVideo = function() {
   return !!(this.youtubeUrl || this.youtubeVideoId);
 };
 
-Exercise.prototype.hasImage = function() {
-  return !!(this.imageUrl || this.imageFileName);
-};
-
 Exercise.prototype.getVideoEmbedUrl = function() {
   if (this.youtubeVideoId) {
     return `https://www.youtube.com/embed/${this.youtubeVideoId}?controls=1&rel=0&modestbranding=1`;
   }
-  return this.videoUrl || null;
+  return null;
 };
 
 Exercise.prototype.getVideoThumbnail = function() {
   if (this.youtubeVideoId) {
     return `https://img.youtube.com/vi/${this.youtubeVideoId}/hqdefault.jpg`;
   }
-  return this.imageUrl || null;
+  return null;
 };
 
 Exercise.prototype.toJSON = function() {
@@ -226,7 +149,6 @@ Exercise.prototype.toJSON = function() {
     ...values,
     hasVideo: this.hasVideo(),
     hasYouTubeVideo: this.hasYouTubeVideo(),
-    hasImage: this.hasImage(),
     videoEmbedUrl: this.getVideoEmbedUrl(),
     videoThumbnail: this.getVideoThumbnail()
   };
@@ -235,11 +157,9 @@ Exercise.prototype.toJSON = function() {
 // Static methods
 Exercise.getCategoryColor = function(category) {
   const colors = {
-    'Push': 'bg-red-100 text-red-800',
-    'Pull': 'bg-blue-100 text-blue-800',
-    'Leg': 'bg-green-100 text-green-800',
-    'Full Body': 'bg-purple-100 text-purple-800',
-    'Cardio': 'bg-orange-100 text-orange-800'
+    'Angkat Beban': 'bg-blue-100 text-blue-800',
+    'Kardio': 'bg-red-100 text-red-800',
+    'Other': 'bg-green-100 text-green-800'
   };
   return colors[category] || 'bg-gray-100 text-gray-800';
 };
@@ -269,23 +189,10 @@ Exercise.searchByName = async function(searchTerm) {
 Exercise.getWithVideo = async function() {
   return await this.findAll({
     where: {
-      [sequelize.Sequelize.Op.or]: [
-        { youtubeUrl: { [sequelize.Sequelize.Op.ne]: null } },
-        { videoUrl: { [sequelize.Sequelize.Op.ne]: null } }
-      ],
+      youtubeUrl: { [sequelize.Sequelize.Op.ne]: null },
       isActive: true
     },
     order: [['category', 'ASC'], ['name', 'ASC']]
-  });
-};
-
-Exercise.getByDifficulty = async function(difficulty) {
-  return await this.findAll({
-    where: {
-      difficulty,
-      isActive: true
-    },
-    order: [['name', 'ASC']]
   });
 };
 
@@ -296,7 +203,7 @@ Exercise.createWithYouTube = async function(exerciseData) {
     
     if (exerciseData.youtubeUrl) {
       if (!validateYouTubeUrl(exerciseData.youtubeUrl)) {
-        throw new Error('Invalid YouTube URL');
+        throw new Error('URL YouTube tidak valid');
       }
       const videoId = extractVideoId(exerciseData.youtubeUrl);
       if (videoId) {
@@ -317,11 +224,11 @@ Exercise.updateYouTubeUrl = async function(id, youtubeUrl) {
     
     const exercise = await this.findByPk(id);
     if (!exercise) {
-      throw new Error('Exercise not found');
+      throw new Error('Gerakan tidak ditemukan');
     }
     
     if (youtubeUrl && !validateYouTubeUrl(youtubeUrl)) {
-      throw new Error('Invalid YouTube URL');
+      throw new Error('URL YouTube tidak valid');
     }
     
     const updateData = {

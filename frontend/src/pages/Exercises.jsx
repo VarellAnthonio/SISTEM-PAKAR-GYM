@@ -1,4 +1,4 @@
-// frontend/src/pages/Exercises.jsx - FIXED VERSION (Load All Exercises)
+// frontend/src/pages/Exercises.jsx - SIMPLIFIED VERSION
 import { useState, useEffect } from 'react';
 import SidebarLayout from '../components/common/SidebarLayout';
 import ExerciseModal from '../components/exercise/ExerciseModal';
@@ -7,7 +7,6 @@ import {
   MagnifyingGlassIcon, 
   EyeIcon,
   StarIcon,
-  ClockIcon,
   FireIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
@@ -21,8 +20,6 @@ const Exercises = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('All');
-  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -30,25 +27,20 @@ const Exercises = () => {
   
   // Pagination for display (client-side)
   const [currentPage, setCurrentPage] = useState(1);
-  const [exercisesPerPage] = useState(9); // Show more per page
+  const [exercisesPerPage] = useState(12);
   
   const [favorites, setFavorites] = useState(new Set());
   const [stats, setStats] = useState({
     total: 0,
     withVideo: 0,
-    byCategory: {},
-    byDifficulty: {}
+    byCategory: {}
   });
 
-  const categories = ['All', 'Push', 'Pull', 'Leg', 'Full Body', 'Cardio'];
-  const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
-  const muscleGroups = [
-    'All', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 
-    'Quadriceps', 'Hamstrings', 'Glutes', 'Calves', 'Abs', 'Lats'
-  ];
+  // SIMPLIFIED CATEGORIES
+  const categories = ['All', 'Angkat Beban', 'Kardio', 'Other'];
 
   useEffect(() => {
-    console.log('🔄 Exercise page mounted, fetching ALL exercises...');
+    console.log('🔄 Exercise page mounted, fetching exercises...');
     fetchAllExercises();
     loadFavorites();
   }, []);
@@ -56,34 +48,32 @@ const Exercises = () => {
   // Filter exercises when search/filters change
   useEffect(() => {
     filterExercises();
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [exercises, searchTerm, selectedCategory, selectedDifficulty, selectedMuscleGroup]);
+    setCurrentPage(1);
+  }, [exercises, searchTerm, selectedCategory]);
 
   const fetchAllExercises = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('📡 Fetching ALL exercises (no pagination limit)...');
-
-      // Fetch ALL exercises by setting a high limit
+      // Fetch only active exercises for users
       const params = {
-        limit: 1000, // High limit to get all exercises
-        page: 1
+        limit: 1000,
+        page: 1,
+        active: true
       };
 
       const result = await exerciseService.getAll(params);
       
-      console.log('📥 Exercise API result:', result);
-      
       if (result.success) {
         const exercisesData = result.data?.exercises || result.data || [];
-        console.log('✅ Total exercises loaded:', exercisesData.length);
+        // Filter only active exercises
+        const activeExercises = exercisesData.filter(ex => ex.isActive !== false);
+        console.log('✅ Active exercises loaded:', activeExercises.length);
         
-        setExercises(exercisesData);
-        calculateStats(exercisesData);
+        setExercises(activeExercises);
+        calculateStats(activeExercises);
       } else {
-        console.error('❌ Exercise API failed:', result.message);
         setError(result.message || 'Failed to load exercises');
         toast.error(result.message || 'Failed to load exercises');
       }
@@ -104,9 +94,7 @@ const Exercises = () => {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(exercise => 
         exercise.name?.toLowerCase().includes(searchLower) ||
-        exercise.description?.toLowerCase().includes(searchLower) ||
-        exercise.muscleGroups?.some(muscle => muscle.toLowerCase().includes(searchLower)) ||
-        exercise.equipment?.some(equip => equip.toLowerCase().includes(searchLower))
+        exercise.description?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -114,41 +102,23 @@ const Exercises = () => {
       filtered = filtered.filter(exercise => exercise.category === selectedCategory);
     }
 
-    if (selectedDifficulty !== 'All') {
-      filtered = filtered.filter(exercise => exercise.difficulty === selectedDifficulty);
-    }
-
-    if (selectedMuscleGroup !== 'All') {
-      filtered = filtered.filter(exercise => 
-        exercise.muscleGroups?.includes(selectedMuscleGroup)
-      );
-    }
-
     console.log('🔍 Filtered exercises:', filtered.length, 'from total:', exercises.length);
     setFilteredExercises(filtered);
   };
 
   const calculateStats = (exercisesData) => {
-    console.log('📊 Calculating stats for exercises:', exercisesData.length);
-    
-    const withVideo = exercisesData.filter(ex => ex.youtubeUrl || ex.videoUrl).length;
+    const withVideo = exercisesData.filter(ex => ex.youtubeUrl).length;
     const byCategory = {};
-    const byDifficulty = {};
 
     exercisesData.forEach(exercise => {
       byCategory[exercise.category] = (byCategory[exercise.category] || 0) + 1;
-      byDifficulty[exercise.difficulty] = (byDifficulty[exercise.difficulty] || 0) + 1;
     });
 
-    const newStats = {
+    setStats({
       total: exercisesData.length,
       withVideo,
-      byCategory,
-      byDifficulty
-    };
-
-    console.log('📈 Stats calculated:', newStats);
-    setStats(newStats);
+      byCategory
+    });
   };
 
   const loadFavorites = () => {
@@ -166,10 +136,10 @@ const Exercises = () => {
     const newFavorites = new Set(favorites);
     if (newFavorites.has(exerciseId)) {
       newFavorites.delete(exerciseId);
-      toast.success('Removed from favorites');
+      toast.success('Dihapus dari favorit');
     } else {
       newFavorites.add(exerciseId);
-      toast.success('Added to favorites');
+      toast.success('Ditambahkan ke favorit');
     }
     
     try {
@@ -181,7 +151,6 @@ const Exercises = () => {
   };
 
   const handleView = (exercise) => {
-    console.log('👁️ Viewing exercise:', exercise);
     setSelectedExercise(exercise);
     setShowModal(true);
   };
@@ -197,29 +166,24 @@ const Exercises = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Safe video ID extraction
   const extractVideoId = (url) => {
-    try {
-      return exerciseService.utils.extractVideoId(url);
-    } catch (error) {
-      console.warn('Failed to extract video ID from:', url, error);
-      return null;
-    }
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    return match ? match[1] : null;
   };
 
   const getCategoryColor = (category) => {
-    return exerciseService.utils.getCategoryColor(category);
-  };
-
-  const getDifficultyColor = (difficulty) => {
-    return exerciseService.utils.getDifficultyColor(difficulty);
+    const colors = {
+      'Angkat Beban': 'bg-blue-100 text-blue-800',
+      'Kardio': 'bg-red-100 text-red-800',
+      'Other': 'bg-green-100 text-green-800'
+    };
+    return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
   const clearAllFilters = () => {
     setSearchTerm('');
     setSelectedCategory('All');
-    setSelectedDifficulty('All');
-    setSelectedMuscleGroup('All');
   };
 
   // Error state
@@ -230,7 +194,7 @@ const Exercises = () => {
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
               <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Exercises</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Gagal Memuat Gerakan</h3>
               <p className="text-gray-600 mb-4">{error}</p>
               <button
                 onClick={() => {
@@ -239,7 +203,7 @@ const Exercises = () => {
                 }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
               >
-                Try Again
+                Coba Lagi
               </button>
             </div>
           </div>
@@ -256,7 +220,7 @@ const Exercises = () => {
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading all exercises...</p>
+              <p className="text-gray-600">Memuat gerakan latihan...</p>
             </div>
           </div>
         </div>
@@ -267,27 +231,13 @@ const Exercises = () => {
   return (
     <SidebarLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Debug Info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="text-sm font-medium text-green-900">📊 Exercise Library Status</h4>
-            <div className="mt-1 text-xs text-green-800 space-y-1">
-              <p>• <strong>Total exercises loaded:</strong> {exercises.length}</p>
-              <p>• <strong>After filters:</strong> {filteredExercises.length}</p>
-              <p>• <strong>Showing on page:</strong> {currentExercises.length} (Page {currentPage} of {totalPages})</p>
-              <p>• <strong>With video:</strong> {stats.withVideo}</p>
-              <p>• <strong>Categories:</strong> {Object.entries(stats.byCategory).map(([cat, count]) => `${cat}: ${count}`).join(', ')}</p>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
-            Exercise Library
+            Gerakan Latihan
           </h1>
           <p className="text-gray-600">
-            Complete collection of exercises with video tutorials - Total: {exercises.length} exercises
+            Koleksi lengkap gerakan latihan dengan tutorial video - Total: {exercises.length} gerakan
           </p>
           
           {/* Quick Stats */}
@@ -297,7 +247,7 @@ const Exercises = () => {
                 <PlayIcon className="h-5 w-5 text-blue-600 mr-2" />
                 <div>
                   <p className="text-sm font-medium text-blue-900">{stats.total}</p>
-                  <p className="text-xs text-blue-600">Total Exercises</p>
+                  <p className="text-xs text-blue-600">Total Gerakan</p>
                 </div>
               </div>
             </div>
@@ -307,7 +257,7 @@ const Exercises = () => {
                 <PlayIcon className="h-5 w-5 text-green-600 mr-2" />
                 <div>
                   <p className="text-sm font-medium text-green-900">{stats.withVideo}</p>
-                  <p className="text-xs text-green-600">With Videos</p>
+                  <p className="text-xs text-green-600">Dengan Video</p>
                 </div>
               </div>
             </div>
@@ -317,7 +267,7 @@ const Exercises = () => {
                 <StarIcon className="h-5 w-5 text-purple-600 mr-2" />
                 <div>
                   <p className="text-sm font-medium text-purple-900">{favorites.size}</p>
-                  <p className="text-xs text-purple-600">Favorites</p>
+                  <p className="text-xs text-purple-600">Favorit</p>
                 </div>
               </div>
             </div>
@@ -327,7 +277,7 @@ const Exercises = () => {
                 <FireIcon className="h-5 w-5 text-orange-600 mr-2" />
                 <div>
                   <p className="text-sm font-medium text-orange-900">{filteredExercises.length}</p>
-                  <p className="text-xs text-orange-600">After Filters</p>
+                  <p className="text-xs text-orange-600">Hasil Filter</p>
                 </div>
               </div>
             </div>
@@ -336,13 +286,13 @@ const Exercises = () => {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Search */}
-            <div>
+            <div className="lg:col-span-2">
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search exercises..."
+                  placeholder="Cari gerakan..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -360,37 +310,7 @@ const Exercises = () => {
               >
                 {categories.map(category => (
                   <option key={category} value={category}>
-                    {category === 'All' ? 'All Categories' : category}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Difficulty Filter */}
-            <div>
-              <select
-                value={selectedDifficulty}
-                onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {difficulties.map(difficulty => (
-                  <option key={difficulty} value={difficulty}>
-                    {difficulty === 'All' ? 'All Levels' : difficulty}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Muscle Group Filter */}
-            <div>
-              <select
-                value={selectedMuscleGroup}
-                onChange={(e) => setSelectedMuscleGroup(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {muscleGroups.map(muscle => (
-                  <option key={muscle} value={muscle}>
-                    {muscle === 'All' ? 'All Muscles' : muscle}
+                    {category === 'All' ? 'Semua Kategori' : category}
                   </option>
                 ))}
               </select>
@@ -398,13 +318,13 @@ const Exercises = () => {
           </div>
 
           {/* Clear Filters Button */}
-          {(searchTerm || selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedMuscleGroup !== 'All') && (
+          {(searchTerm || selectedCategory !== 'All') && (
             <div className="mt-4">
               <button
                 onClick={clearAllFilters}
                 className="text-sm text-blue-600 hover:text-blue-800 underline"
               >
-                Clear all filters
+                Hapus semua filter
               </button>
             </div>
           )}
@@ -413,10 +333,10 @@ const Exercises = () => {
         {/* Results Info */}
         <div className="mb-4 flex justify-between items-center">
           <p className="text-sm text-gray-600">
-            Showing {indexOfFirstExercise + 1}-{Math.min(indexOfLastExercise, filteredExercises.length)} of {filteredExercises.length} exercises
+            Menampilkan {indexOfFirstExercise + 1}-{Math.min(indexOfLastExercise, filteredExercises.length)} dari {filteredExercises.length} gerakan
           </p>
           <p className="text-sm text-gray-500">
-            Page {currentPage} of {totalPages}
+            Halaman {currentPage} dari {totalPages}
           </p>
         </div>
 
@@ -452,7 +372,7 @@ const Exercises = () => {
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
                       <div className="text-center">
                         <PlayIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No video</p>
+                        <p className="text-sm text-gray-500">Tidak ada video</p>
                       </div>
                     </div>
                   )}
@@ -484,7 +404,7 @@ const Exercises = () => {
                     <button
                       onClick={() => handleView(exercise)}
                       className="ml-2 text-gray-600 hover:text-gray-800 p-1 hover:bg-gray-100 rounded transition-colors"
-                      title="View Details"
+                      title="Lihat Detail"
                     >
                       <EyeIcon className="h-4 w-4" />
                     </button>
@@ -494,46 +414,25 @@ const Exercises = () => {
                     <span className={`px-2 py-1 text-xs font-medium rounded border ${getCategoryColor(exercise.category)}`}>
                       {exercise.category}
                     </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${getDifficultyColor(exercise.difficulty)}`}>
-                      {exercise.difficulty}
-                    </span>
                   </div>
 
                   <p className="text-xs text-gray-600 line-clamp-2 mb-3">
-                    {exercise.description || 'No description available'}
+                    {exercise.description || 'Tidak ada deskripsi'}
                   </p>
 
-                  {/* Exercise Details */}
-                  <div className="space-y-2">
-                    {exercise.sets && (
-                      <div className="flex items-center text-xs text-gray-500">
-                        <ClockIcon className="h-3 w-3 mr-1" />
-                        <span>Sets: {exercise.sets}</span>
-                      </div>
-                    )}
-                    
-                    {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {exercise.muscleGroups.slice(0, 2).map(muscle => (
-                          <span key={muscle} className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                            {muscle}
-                          </span>
-                        ))}
-                        {exercise.muscleGroups.length > 2 && (
-                          <span className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                            +{exercise.muscleGroups.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                  {/* Video Status */}
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                    <span className={`inline-flex items-center ${exercise.youtubeUrl ? 'text-green-600' : 'text-orange-600'}`}>
+                      {exercise.youtubeUrl ? '✓ Tutorial tersedia' : '○ Belum ada tutorial'}
+                    </span>
                   </div>
 
                   {/* View Button */}
                   <button
                     onClick={() => handleView(exercise)}
-                    className="w-full mt-3 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
+                    className="w-full px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
                   >
-                    View Exercise
+                    Lihat Detail
                   </button>
                 </div>
               </div>
@@ -548,18 +447,18 @@ const Exercises = () => {
               <PlayIcon className="mx-auto h-12 w-12 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No exercises found
+              Tidak ada gerakan ditemukan
             </h3>
             <p className="text-gray-500 mb-4">
-              {searchTerm || selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedMuscleGroup !== 'All'
-                ? 'Try adjusting your search or filter criteria' 
-                : 'No exercises available at the moment'}
+              {searchTerm || selectedCategory !== 'All'
+                ? 'Coba ubah kata kunci atau filter pencarian' 
+                : 'Belum ada gerakan tersedia saat ini'}
             </p>
             <button
               onClick={clearAllFilters}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
             >
-              Clear All Filters
+              Hapus Semua Filter
             </button>
           </div>
         )}
@@ -572,7 +471,7 @@ const Exercises = () => {
               disabled={currentPage === 1}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
-              Previous
+              Sebelumnya
             </button>
             
             {/* Page Numbers */}
@@ -608,10 +507,38 @@ const Exercises = () => {
               disabled={currentPage === totalPages}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
-              Next
+              Selanjutnya
             </button>
           </div>
         )}
+
+        {/* Category Summary */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {categories.slice(1).map(category => {
+            const count = stats.byCategory[category] || 0;
+            
+            return (
+              <div key={category} className="bg-white border border-gray-200 rounded-lg p-4 text-center hover:shadow-md transition-shadow duration-200">
+                <div className={`inline-block px-2 py-1 text-xs font-medium rounded mb-2 ${getCategoryColor(category)}`}>
+                  {category}
+                </div>
+                <div className="text-lg font-bold text-gray-900">{count}</div>
+                <div className="text-sm text-gray-500">
+                  gerakan tersedia
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedCategory(category);
+                    setCurrentPage(1);
+                  }}
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Lihat Semua →
+                </button>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Exercise Modal */}
         <ExerciseModal
