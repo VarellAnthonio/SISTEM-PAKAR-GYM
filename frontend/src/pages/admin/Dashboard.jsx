@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
-import { UsersIcon, ClipboardDocumentListIcon, CogIcon, ChartBarIcon, PlayIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { 
+  UsersIcon, 
+  ClipboardDocumentListIcon, 
+  CogIcon, 
+  ChartBarIcon, 
+  PlayIcon,
+  ArrowTrendingUpIcon,
+  ClockIcon,
+  CheckCircleIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import { consultationService } from '../../services/consultation';
-import { programService } from '../../services/program';
 import { apiService } from '../../services/api';
-import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -14,224 +21,114 @@ const AdminDashboard = () => {
   
   const [stats, setStats] = useState({
     users: 0,
-    programs: 0,
+    programs: 10,
     exercises: 0,
-    rules: 0,
+    rules: 10,
     consultations: 0
   });
   const [consultationStats, setConsultationStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [recentConsultations, setRecentConsultations] = useState([]);
 
-  // Check authentication and admin role
   useEffect(() => {
-    console.log('Admin Dashboard - Auth Check:', {
-      isAuthenticated,
-      isAdmin,
-      user: user?.email,
-      role: user?.role,
-      authLoading
-    });
-
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        console.log('Not authenticated, redirecting to login');
-        navigate('/login');
-        return;
-      }
-
-      if (!isAdmin) {
-        console.log('Not admin, redirecting to home');
-        toast.error('Akses ditolak. Anda bukan administrator.');
-        navigate('/');
-        return;
-      }
-
-      // If we reach here, user is authenticated admin
+    if (!authLoading && isAuthenticated && isAdmin) {
       fetchDashboardData();
     }
-  }, [isAuthenticated, isAdmin, authLoading, navigate]);
+  }, [isAuthenticated, isAdmin, authLoading]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      setError(null);
 
-      console.log('Fetching admin dashboard data...');
-
-      // Fetch basic stats from health endpoint
+      // Fetch basic stats
       try {
         const healthResponse = await apiService.health();
-        console.log('Health Response:', healthResponse.data);
-        
         if (healthResponse.data?.stats) {
           setStats(healthResponse.data.stats);
         }
-      } catch (healthError) {
-        console.error('Health endpoint error:', healthError);
-        // Continue with other requests even if health fails
+      } catch (error) {
+        console.error('Health endpoint error:', error);
       }
 
       // Fetch consultation statistics
       try {
         const consultationStatsResult = await consultationService.admin.getStats();
-        console.log('Consultation Stats Result:', consultationStatsResult);
-        
-        if (consultationStatsResult && consultationStatsResult.success) {
+        if (consultationStatsResult?.success) {
           setConsultationStats(consultationStatsResult.data);
         }
-      } catch (consultationError) {
-        console.error('Consultation stats error:', consultationError);
-        // Continue with other requests
+      } catch (error) {
+        console.error('Consultation stats error:', error);
       }
 
       // Fetch recent consultations
       try {
-        const recentConsultationsResult = await consultationService.admin.getAll({ limit: 5 });
-        console.log('Recent Consultations Result:', recentConsultationsResult);
-        
-        if (recentConsultationsResult && recentConsultationsResult.success) {
+        const recentConsultationsResult = await consultationService.admin.getAll({ limit: 3 });
+        if (recentConsultationsResult?.success) {
           const consultationsData = recentConsultationsResult.data?.consultations || recentConsultationsResult.data || [];
           setRecentConsultations(Array.isArray(consultationsData) ? consultationsData : []);
         }
-      } catch (recentError) {
-        console.error('Recent consultations error:', recentError);
-        // Continue, just set empty array
+      } catch (error) {
+        console.error('Recent consultations error:', error);
         setRecentConsultations([]);
       }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError('Gagal memuat data dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  const menuItems = [
+  const quickActions = [
     {
       title: 'Program Olahraga',
-      description: 'Kelola data program olahraga P1-P10',
+      description: 'Kelola 10 program olahraga',
       icon: ClipboardDocumentListIcon,
       color: 'bg-blue-500',
+      textColor: 'text-blue-600',
+      bgColor: 'bg-blue-50',
       link: '/admin/programs',
-      count: `${stats.programs || 0} Program`
-    },
-    {
-      title: 'Aturan Sistem',
-      description: 'Konfigurasi rules forward chaining',
-      icon: CogIcon,
-      color: 'bg-purple-500',
-      link: '/admin/rules',
-      count: `${stats.rules || 0} Rules`
-    },
-    {
-      title: 'Riwayat Konsultasi',
-      description: 'Monitor semua konsultasi pengguna',
-      icon: ChartBarIcon,
-      color: 'bg-orange-500',
-      link: '/admin/consultations',
-      count: `${stats.consultations || 0} Konsultasi`
+      count: stats.programs
     },
     {
       title: 'Gerakan Latihan',
-      description: 'Kelola video dan data gerakan',
+      description: 'Kelola database gerakan',
       icon: PlayIcon,
       color: 'bg-green-500',
+      textColor: 'text-green-600',
+      bgColor: 'bg-green-50',
       link: '/admin/exercises',
-      count: `${stats.exercises || 0} Gerakan`
+      count: stats.exercises
     },
     {
-      title: 'Kelola Pengguna',
-      description: 'Manajemen akun dan hak akses',
-      icon: UsersIcon,
-      color: 'bg-red-500',
-      link: '/admin/users',
-      count: `${stats.users || 0} Users`
+      title: 'Riwayat Konsultasi',
+      description: 'Monitor konsultasi user',
+      icon: ChartBarIcon,
+      color: 'bg-orange-500',
+      textColor: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      link: '/admin/consultations',
+      count: stats.consultations
+    },
+    {
+      title: 'Aturan Sistem',
+      description: 'Forward chaining rules',
+      icon: CogIcon,
+      color: 'bg-purple-500',
+      textColor: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      link: '/admin/rules',
+      count: stats.rules
     }
   ];
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid Date';
-    }
-  };
-
-  const handleMenuClick = (link) => {
-    console.log('Navigating to:', link);
-    navigate(link);
-  };
-
-  // Show loading while checking auth
-  if (authLoading) {
+  if (authLoading || loading) {
     return (
       <AdminSidebarLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Memverifikasi akses administrator...</p>
-          </div>
-        </div>
-      </AdminSidebarLayout>
-    );
-  }
-
-  // Show loading while fetching data
-  if (loading) {
-    return (
-      <AdminSidebarLayout>
-        <div className="space-y-6">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="mt-2 text-gray-600">Selamat datang, {user?.name}</p>
-          </div>
-          
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Memuat data dashboard...</p>
-            </div>
-          </div>
-        </div>
-      </AdminSidebarLayout>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <AdminSidebarLayout>
-        <div className="space-y-6">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="mt-2 text-gray-600">Selamat datang, {user?.name}</p>
-          </div>
-
-          <div className="bg-white shadow rounded-lg p-8 text-center">
-            <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Gagal Memuat Dashboard</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={() => {
-                setError(null);
-                fetchDashboardData();
-              }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
-            >
-              Coba Lagi
-            </button>
+            <p className="text-gray-600">Loading dashboard...</p>
           </div>
         </div>
       </AdminSidebarLayout>
@@ -240,237 +137,202 @@ const AdminDashboard = () => {
 
   return (
     <AdminSidebarLayout>
-      <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">
-            Selamat datang, <strong>{user?.name}</strong> - Administrator Sistem Pakar Program Olahraga
-          </p>
-          
-          {/* Auth Status Indicator */}
-          <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-sm text-green-800">
-              ✅ <strong>Status:</strong> Authenticated as Admin | Email: {user?.email} | Role: {user?.role}
-            </p>
+      <div className="space-y-8">
+        {/* Welcome Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.name}!</h1>
+              <p className="text-blue-100">
+                Manage your fitness expert system from this dashboard
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-blue-100 text-sm">System Status</div>
+              <div className="flex items-center text-white">
+                <CheckCircleIcon className="h-5 w-5 mr-2" />
+                <span className="font-medium">All Systems Operational</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Quick Stats */}
+        {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center">
-              <div className="bg-blue-100 rounded-lg p-3">
-                <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600" />
+              <div className="bg-blue-100 rounded-lg p-3 mr-4">
+                <UsersIcon className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Program</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.programs || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="bg-green-100 rounded-lg p-3">
-                <UsersIcon className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
+              <div>
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.users || 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.users}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center">
-              <div className="bg-orange-100 rounded-lg p-3">
-                <ChartBarIcon className="h-6 w-6 text-orange-600" />
+              <div className="bg-green-100 rounded-lg p-3 mr-4">
+                <ChartBarIcon className="h-6 w-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Konsultasi</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.consultations || 0}</p>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Consultations</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.consultations}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center">
-              <div className="bg-purple-100 rounded-lg p-3">
-                <PlayIcon className="h-6 w-6 text-purple-600" />
+              <div className="bg-orange-100 rounded-lg p-3 mr-4">
+                <ClockIcon className="h-6 w-6 text-orange-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Gerakan</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.exercises || 0}</p>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Today</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {consultationStats?.today || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center">
+              <div className="bg-purple-100 rounded-lg p-3 mr-4">
+                <ArrowTrendingUpIcon className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {consultationStats?.activeUsers || 0}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Additional Stats from Consultation API */}
-        {consultationStats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Konsultasi Hari Ini</h3>
-              <p className="text-3xl font-bold text-blue-600">{consultationStats.today || 0}</p>
-              <p className="text-sm text-gray-500 mt-1">Dari total {consultationStats.total || 0} konsultasi</p>
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">User Aktif</h3>
-              <p className="text-3xl font-bold text-green-600">{consultationStats.activeUsers || 0}</p>
-              <p className="text-sm text-gray-500 mt-1">30 hari terakhir</p>
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Program Populer</h3>
-              {consultationStats.programStats && consultationStats.programStats.length > 0 ? (
-                <div>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {consultationStats.programStats[0].program?.code || 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {consultationStats.programStats[0].program?.name || 'Program tidak tersedia'}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {consultationStats.programStats[0].count || 0} konsultasi
-                  </p>
+        {/* Quick Actions */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {quickActions.map((action) => (
+              <button
+                key={action.title}
+                onClick={() => navigate(action.link)}
+                className={`${action.bgColor} rounded-xl p-6 text-left hover:shadow-md transition-all duration-200 border border-gray-100 group`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`${action.bgColor} rounded-lg p-3`}>
+                    <action.icon className={`h-6 w-6 ${action.textColor}`} />
+                  </div>
+                  <span className={`text-2xl font-bold ${action.textColor}`}>
+                    {action.count}
+                  </span>
                 </div>
+                <h3 className={`font-semibold ${action.textColor} mb-1 group-hover:text-gray-900 transition-colors`}>
+                  {action.title}
+                </h3>
+                <p className="text-sm text-gray-600">{action.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* System Overview */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-600">Expert System Engine</span>
+                <span className="flex items-center text-green-600">
+                  <CheckCircleIcon className="h-4 w-4 mr-1" />
+                  Active
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-600">Forward Chaining Rules</span>
+                <span className="font-medium text-gray-900">{stats.rules} Rules</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-600">Exercise Database</span>
+                <span className="font-medium text-gray-900">{stats.exercises} Exercises</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-600">Program Coverage</span>
+                <span className="font-medium text-gray-900">100%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Consultations */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Consultations</h3>
+            <div className="space-y-3">
+              {recentConsultations.length > 0 ? (
+                recentConsultations.map((consultation) => (
+                  <div key={consultation.id} className="flex items-start space-x-3 py-2">
+                    <div className="bg-blue-100 rounded-full p-1.5">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">
+                        <span className="font-medium">{consultation.user?.name || 'Unknown User'}</span> consulted
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Program: {consultation.program?.code || 'N/A'} - BMI: {consultation.bmi || 'N/A'}, Body Fat: {consultation.bodyFatPercentage || 'N/A'}%
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(consultation.createdAt).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))
               ) : (
-                <p className="text-gray-500">Belum ada data</p>
+                <p className="text-gray-500 text-sm">No recent consultations</p>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Menu Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {menuItems.map((item) => (
-            <button
-              key={item.title}
-              onClick={() => handleMenuClick(item.link)}
-              className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow duration-200 text-left"
+            <button 
+              onClick={() => navigate('/admin/consultations')}
+              className="w-full mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              <div className="flex items-center">
-                <div className={`${item.color} p-3 rounded-lg`}>
-                  <item.icon className="h-6 w-6 text-white" />
-                </div>
-                <div className="ml-4 flex-1">
-                  <h2 className="text-lg font-semibold text-gray-900">{item.title}</h2>
-                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                  <p className="text-sm font-medium text-gray-500 mt-2">{item.count}</p>
-                </div>
-              </div>
+              View all consultations →
             </button>
-          ))}
+          </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Konsultasi Terbaru</h2>
-          {recentConsultations.length > 0 ? (
-            <div className="space-y-4">
-              {recentConsultations.map((consultation) => (
-                <div key={consultation.id} className="flex items-center justify-between border-b border-gray-200 pb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {consultation.user?.name || 'Unknown User'} melakukan konsultasi
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Program: {consultation.program?.code || 'N/A'} - BMI: {consultation.bmi || 'N/A'}, Body Fat: {consultation.bodyFatPercentage || 'N/A'}%
-                    </p>
-                  </div>
-                  <p className="text-sm text-gray-400">{formatDate(consultation.createdAt)}</p>
-                </div>
-              ))}
-              
-              <div className="mt-4 text-center">
-                <button
-                  onClick={() => handleMenuClick('/admin/consultations')}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+        {/* Popular Program */}
+        {consultationStats?.programStats?.[0] && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-green-900 mb-1">Most Popular Program</h3>
+                <p className="text-green-700">
+                  <span className="font-bold text-2xl">
+                    {consultationStats.programStats[0].program?.code}
+                  </span>
+                  {' - '}
+                  {consultationStats.programStats[0].program?.name}
+                </p>
+                <p className="text-sm text-green-600 mt-1">
+                  {consultationStats.programStats[0].count} consultations this month
+                </p>
+              </div>
+              <div className="text-right">
+                <button 
+                  onClick={() => navigate('/admin/programs')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                 >
-                  Lihat Semua Konsultasi →
+                  View Programs
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-gray-500">Belum ada konsultasi terbaru</p>
-              <button
-                onClick={() => handleMenuClick('/admin/consultations')}
-                className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                Lihat Riwayat Konsultasi →
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* System Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-3">Status Sistem</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-blue-800">Database</span>
-                <span className="text-sm font-medium text-green-600">✓ Online</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-blue-800">Forward Chaining Engine</span>
-                <span className="text-sm font-medium text-green-600">✓ Active</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-blue-800">API Endpoints</span>
-                <span className="text-sm font-medium text-green-600">✓ Operational</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-blue-800">Authentication</span>
-                <span className="text-sm font-medium text-green-600">✓ Admin Access</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-green-900 mb-3">Program Distribution</h3>
-            {consultationStats?.programStats && consultationStats.programStats.length > 0 ? (
-              <div className="space-y-2">
-                {consultationStats.programStats.slice(0, 3).map((stat) => (
-                  <div key={stat.program?.id || Math.random()} className="flex justify-between">
-                    <span className="text-sm text-green-800">
-                      {stat.program?.code || 'N/A'} - {stat.program?.name || 'Program tidak tersedia'}
-                    </span>
-                    <span className="text-sm font-medium text-green-600">{stat.count || 0}</span>
-                  </div>
-                ))}
-                
-                <div className="mt-3 pt-2 border-t border-green-200">
-                  <button
-                    onClick={() => handleMenuClick('/admin/consultations')}
-                    className="text-sm text-green-700 hover:text-green-900 font-medium"
-                  >
-                    Lihat Detail Statistik →
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-green-800">Belum ada data distribusi program</p>
-            )}
-          </div>
-        </div>
-
-        {/* Debug Info for Development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Debug Info (Dev Mode)</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p>Auth Loading: {authLoading ? 'Yes' : 'No'}</p>
-              <p>Is Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
-              <p>Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
-              <p>User Email: {user?.email || 'None'}</p>
-              <p>User Role: {user?.role || 'None'}</p>
-              <p>Stats Loaded: {Object.values(stats).some(v => v > 0) ? 'Yes' : 'No'}</p>
-              <p>Consultation Stats: {consultationStats ? 'Loaded' : 'None'}</p>
-              <p>Recent Consultations: {recentConsultations.length}</p>
             </div>
           </div>
         )}

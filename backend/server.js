@@ -12,7 +12,8 @@ import authRoutes from './routes/authRoutes.js';
 import consultationRoutes from './routes/consultationRoutes.js';
 import programRoutes from './routes/programRoutes.js';
 import ruleRoutes from './routes/ruleRoutes.js';
-import exerciseRoutes from './routes/exerciseRoutes.js'; // NEW: Exercise routes
+import exerciseRoutes from './routes/exerciseRoutes.js';
+import userRoutes from './routes/userRoutes.js'; 
 
 // Load env vars
 dotenv.config();
@@ -33,7 +34,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/programs', programRoutes);
 app.use('/api/rules', ruleRoutes);
-app.use('/api/exercises', exerciseRoutes); // NEW: Exercise management routes
+app.use('/api/exercises', exerciseRoutes);
+app.use('/api/users', userRoutes); 
 
 // Health check route with database info
 app.get('/api/health', async (req, res) => {

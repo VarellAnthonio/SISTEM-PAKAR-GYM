@@ -1,4 +1,3 @@
-// frontend/src/pages/admin/Exercises.jsx - COMPLETE FIXED VERSION
 import { useState, useEffect } from 'react';
 import AdminSidebarLayout from '../../components/common/AdminSidebarLayout';
 import ExerciseModal from '../../components/exercise/ExerciseModal';
@@ -9,16 +8,15 @@ import {
   PencilIcon, 
   TrashIcon,
   PlayIcon,
-  ExclamationTriangleIcon
+  CheckCircleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { exerciseService } from '../../services/exercise';
 import toast from 'react-hot-toast';
 
 const AdminExercises = () => {
   const [exercises, setExercises] = useState([]);
-  const [filteredExercises, setFilteredExercises] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -33,153 +31,62 @@ const AdminExercises = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [exercisesPerPage] = useState(12);
   
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    withVideo: 0,
-    withoutVideo: 0,
-    videoPercentage: 0,
-    byCategory: {}
-  });
-
-  // SIMPLIFIED CATEGORIES
   const categories = ['All', 'Angkat Beban', 'Kardio', 'Other'];
-  const statusOptions = ['All', 'Active', 'Inactive'];
 
   useEffect(() => {
-    console.log('🔄 Admin Exercise page mounted, fetching exercises...');
     fetchAllExercises();
   }, []);
 
   useEffect(() => {
-    filterExercises();
     setCurrentPage(1);
-  }, [exercises, searchTerm, selectedCategory, statusFilter]);
+  }, [searchTerm, selectedCategory, statusFilter]);
 
-  // FIXED: Fetch all exercises with video debugging
   const fetchAllExercises = async () => {
     try {
       setLoading(true);
-      setError(null);
       
-      console.log('🔄 Admin fetching exercises with includeInactive...');
-      
-      // FIXED: Admin mode - include inactive with all data
       const params = { 
         limit: 1000, 
         page: 1,
-        includeInactive: true  // Admin can see all exercises
+        includeInactive: true
       };
 
       const result = await exerciseService.getAll(params);
       
       if (result.success) {
         const exercisesData = result.data?.exercises || result.data || [];
-        
-        // DEBUG: Log video data for troubleshooting
-        console.log('🎥 VIDEO DATA DEBUG:');
-        exercisesData.forEach(exercise => {
-          if (exercise.youtubeUrl || exercise.youtubeVideoId) {
-            console.log(`  📹 ${exercise.name} (${exercise.isActive ? 'ACTIVE' : 'INACTIVE'}):`, {
-              youtubeUrl: exercise.youtubeUrl,
-              youtubeVideoId: exercise.youtubeVideoId,
-              isActive: exercise.isActive
-            });
-          }
-        });
-        
-        console.log('✅ All exercises loaded for admin:', {
-          total: exercisesData.length,
-          active: exercisesData.filter(ex => ex.isActive === true).length,
-          inactive: exercisesData.filter(ex => ex.isActive === false).length,
-          withVideo: exercisesData.filter(ex => ex.youtubeUrl).length,
-          activeWithVideo: exercisesData.filter(ex => ex.youtubeUrl && ex.isActive === true).length,
-          inactiveWithVideo: exercisesData.filter(ex => ex.youtubeUrl && ex.isActive === false).length
-        });
-        
         setExercises(exercisesData);
-        calculateStats(exercisesData);
       } else {
-        setError(result.message || 'Failed to load exercises');
         toast.error(result.message || 'Failed to load exercises');
       }
     } catch (error) {
-      console.error('💥 Exercise fetch error:', error);
-      setError(error.message || 'Failed to load exercises');
+      console.error('Exercise fetch error:', error);
       toast.error('Failed to load exercises');
     } finally {
       setLoading(false);
     }
   };
 
-  // FIXED: Filter exercises with proper status handling
-  const filterExercises = () => {
-    let filtered = [...exercises];
-
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(exercise => 
-        exercise.name?.toLowerCase().includes(searchLower) ||
-        exercise.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(exercise => exercise.category === selectedCategory);
-    }
-
-    // FIXED: Status filter with explicit boolean comparison
-    if (statusFilter !== 'All') {
-      if (statusFilter === 'Active') {
-        filtered = filtered.filter(exercise => exercise.isActive === true);
-      } else if (statusFilter === 'Inactive') {
-        filtered = filtered.filter(exercise => exercise.isActive === false);
-      }
-    }
-
-    console.log('🔍 Filter applied:', {
-      search: searchTerm,
-      category: selectedCategory,
-      status: statusFilter,
-      resultCount: filtered.length
-    });
-
-    setFilteredExercises(filtered);
-  };
-
-  // FIXED: Calculate stats with proper boolean comparison
-  const calculateStats = (exercisesData) => {
-    // FIXED: Explicit boolean comparison for accurate counts
-    const active = exercisesData.filter(ex => ex.isActive === true).length;
-    const inactive = exercisesData.filter(ex => ex.isActive === false).length;
-    const withVideo = exercisesData.filter(ex => ex.youtubeUrl && ex.isActive === true).length;
-    const withoutVideo = active - withVideo;
-    const videoPercentage = active > 0 ? Math.round((withVideo / active) * 100) : 0;
+  // Filter exercises
+  const filteredExercises = exercises.filter(exercise => {
+    const matchesSearch = !searchTerm || 
+      exercise.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exercise.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const byCategory = {};
-    exercisesData.forEach(exercise => {
-      byCategory[exercise.category] = (byCategory[exercise.category] || 0) + 1;
-    });
+    const matchesCategory = selectedCategory === 'All' || exercise.category === selectedCategory;
+    
+    const matchesStatus = statusFilter === 'All' || 
+      (statusFilter === 'Active' && exercise.isActive === true) ||
+      (statusFilter === 'Inactive' && exercise.isActive === false);
+    
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
-    console.log('📊 Stats calculated:', {
-      total: exercisesData.length,
-      active,
-      inactive,
-      withVideo,
-      videoPercentage
-    });
-
-    setStats({
-      total: exercisesData.length,
-      active,
-      inactive,
-      withVideo,
-      withoutVideo,
-      videoPercentage,
-      byCategory
-    });
-  };
+  // Pagination
+  const indexOfLastExercise = currentPage * exercisesPerPage;
+  const indexOfFirstExercise = indexOfLastExercise - exercisesPerPage;
+  const currentExercises = filteredExercises.slice(indexOfFirstExercise, indexOfLastExercise);
+  const totalPages = Math.ceil(filteredExercises.length / exercisesPerPage);
 
   const handleCreate = () => {
     setSelectedExercise(null);
@@ -211,7 +118,7 @@ const AdminExercises = () => {
       }
 
       if (result.success) {
-        toast.success(modalMode === 'create' ? 'Gerakan berhasil ditambahkan' : 'Gerakan berhasil diperbarui');
+        toast.success(modalMode === 'create' ? 'Exercise created successfully' : 'Exercise updated successfully');
         await fetchAllExercises();
         setShowModal(false);
         setSelectedExercise(null);
@@ -220,7 +127,7 @@ const AdminExercises = () => {
       }
     } catch (error) {
       console.error('Save error:', error);
-      toast.error(error.message || 'Gagal menyimpan gerakan');
+      toast.error(error.message || 'Failed to save exercise');
       throw error;
     } finally {
       setSaveLoading(false);
@@ -228,7 +135,7 @@ const AdminExercises = () => {
   };
 
   const handleDelete = async (exerciseId) => {
-    if (!window.confirm('Yakin ingin menghapus gerakan ini?')) {
+    if (!window.confirm('Are you sure you want to delete this exercise?')) {
       return;
     }
 
@@ -236,86 +143,35 @@ const AdminExercises = () => {
       const result = await exerciseService.delete(exerciseId);
       
       if (result.success) {
-        toast.success('Gerakan berhasil dihapus');
+        toast.success('Exercise deleted successfully');
         await fetchAllExercises();
         setShowModal(false);
         setSelectedExercise(null);
       } else {
-        toast.error(result.message || 'Gagal menghapus gerakan');
+        toast.error(result.message || 'Failed to delete exercise');
       }
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Gagal menghapus gerakan');
+      toast.error('Failed to delete exercise');
     }
   };
 
-  // FIXED: Toggle status handler with better error handling
   const handleToggleStatus = async (exercise) => {
     try {
-      console.log('🔄 Toggling status for exercise:', exercise.name, 'Current status:', exercise.isActive);
-      
-      // Show loading state
-      const loadingToast = toast.loading(`${exercise.isActive ? 'Menonaktifkan' : 'Mengaktifkan'} gerakan...`);
-      
       const result = await exerciseService.toggleStatus(exercise.id);
-      
-      // Dismiss loading toast
-      toast.dismiss(loadingToast);
       
       if (result.success) {
         const newStatus = result.data?.isActive;
-        const message = newStatus ? 'Gerakan berhasil diaktifkan' : 'Gerakan berhasil dinonaktifkan';
-        
+        const message = newStatus ? 'Exercise activated' : 'Exercise deactivated';
         toast.success(message);
-        console.log('✅ Toggle successful, new status:', newStatus);
-        
-        // Refresh the exercise list to get updated data
         await fetchAllExercises();
       } else {
-        console.error('❌ Toggle failed:', result.message);
-        toast.error(result.message || 'Gagal mengubah status gerakan');
+        toast.error(result.message || 'Failed to toggle status');
       }
     } catch (error) {
-      console.error('❌ Toggle status error:', error);
-      toast.error('Gagal mengubah status gerakan');
+      console.error('Toggle status error:', error);
+      toast.error('Failed to toggle status');
     }
-  };
-
-  // FIXED: Set specific status handler
-  const handleSetStatus = async (exercise, newStatus) => {
-    try {
-      console.log('🔄 Setting status for exercise:', exercise.name, 'to:', newStatus);
-      
-      const loadingToast = toast.loading(`${newStatus ? 'Mengaktifkan' : 'Menonaktifkan'} gerakan...`);
-      
-      const result = await exerciseService.setStatus(exercise.id, newStatus);
-      
-      toast.dismiss(loadingToast);
-      
-      if (result.success) {
-        const message = newStatus ? 'Gerakan berhasil diaktifkan' : 'Gerakan berhasil dinonaktifkan';
-        toast.success(message);
-        
-        // Refresh the exercise list
-        await fetchAllExercises();
-      } else {
-        toast.error(result.message || 'Gagal mengubah status gerakan');
-      }
-    } catch (error) {
-      console.error('❌ Set status error:', error);
-      toast.error('Gagal mengubah status gerakan');
-    }
-  };
-
-  // Client-side pagination
-  const indexOfLastExercise = currentPage * exercisesPerPage;
-  const indexOfFirstExercise = indexOfLastExercise - exercisesPerPage;
-  const currentExercises = filteredExercises.slice(indexOfFirstExercise, indexOfLastExercise);
-  const totalPages = Math.ceil(filteredExercises.length / exercisesPerPage);
-
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const getCategoryColor = (category) => {
@@ -328,136 +184,110 @@ const AdminExercises = () => {
   };
 
   const extractVideoId = (url) => {
-    if (!url) {
-      console.warn('⚠️ No URL provided for video ID extraction');
-      return null;
-    }
-    
+    if (!url) return null;
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    const videoId = match ? match[1] : null;
-    
-    if (!videoId) {
-      console.warn('⚠️ Could not extract video ID from URL:', url);
-    } else {
-      console.log('✅ Video ID extracted:', videoId, 'from URL:', url);
-    }
-    
-    return videoId;
+    return match ? match[1] : null;
   };
 
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('All');
-    setStatusFilter('All');
-  };
-
-  // Error state
-  if (error && !loading && exercises.length === 0) {
+  if (loading) {
     return (
       <AdminSidebarLayout>
-        <div className="max-w-7xl">
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Gagal Memuat Data</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <button
-                onClick={() => {
-                  setError(null);
-                  fetchAllExercises();
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
-              >
-                Coba Lagi
-              </button>
-            </div>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading exercises...</p>
           </div>
         </div>
       </AdminSidebarLayout>
     );
   }
 
-  // Loading state
-  if (loading && exercises.length === 0) {
-    return (
-      <AdminSidebarLayout>
-        <div className="max-w-7xl">
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Memuat data gerakan latihan...</p>
-            </div>
-          </div>
-        </div>
-      </AdminSidebarLayout>
-    );
-  }
+  const activeExercises = exercises.filter(ex => ex.isActive === true).length;
+  const inactiveExercises = exercises.filter(ex => ex.isActive === false).length;
+  const withVideo = exercises.filter(ex => ex.youtubeUrl).length;
 
   return (
     <AdminSidebarLayout>
-      <div className="max-w-7xl">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Kelola Gerakan Latihan</h1>
-            <p className="text-gray-600 mt-1">Kelola database gerakan latihan dengan mudah</p>
+            <h1 className="text-2xl font-bold text-gray-900">Exercise Management</h1>
+            <p className="text-gray-600 mt-1">Manage exercise database with video tutorials</p>
           </div>
           
           <button
             onClick={handleCreate}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
             <PlusIcon className="h-5 w-5 mr-2" />
-            Tambah Gerakan
+            Add Exercise
           </button>
         </div>
 
-        {/* Stats Cards - IMPROVED */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900">Total Gerakan</h3>
-            <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
-            <p className="text-xs text-blue-600">semua gerakan</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-blue-100 rounded-lg p-3 mr-4">
+                <PlayIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Exercises</p>
+                <p className="text-2xl font-bold text-gray-900">{exercises.length}</p>
+              </div>
+            </div>
           </div>
           
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-green-900">Aktif</h3>
-            <p className="text-2xl font-bold text-green-800">{stats.active}</p>
-            <p className="text-xs text-green-600">terlihat user</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-green-100 rounded-lg p-3 mr-4">
+                <CheckCircleIcon className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active</p>
+                <p className="text-2xl font-bold text-gray-900">{activeExercises}</p>
+              </div>
+            </div>
           </div>
           
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-red-900">Nonaktif</h3>
-            <p className="text-2xl font-bold text-red-800">{stats.inactive}</p>
-            <p className="text-xs text-red-600">tersembunyi</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-red-100 rounded-lg p-3 mr-4">
+                <XMarkIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Inactive</p>
+                <p className="text-2xl font-bold text-gray-900">{inactiveExercises}</p>
+              </div>
+            </div>
           </div>
           
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-purple-900">Ada Video</h3>
-            <p className="text-2xl font-bold text-purple-800">{stats.withVideo}</p>
-            <p className="text-xs text-purple-600">{stats.videoPercentage}% coverage</p>
-          </div>
-
-          {/* NEW: Filter Result Card */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-orange-900">Hasil Filter</h3>
-            <p className="text-2xl font-bold text-orange-800">{filteredExercises.length}</p>
-            <p className="text-xs text-orange-600">dari {stats.total} total</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-purple-100 rounded-lg p-3 mr-4">
+                <PlayIcon className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">With Video</p>
+                <p className="text-2xl font-bold text-gray-900">{withVideo}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Filters - IMPROVED */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div className="lg:col-span-2">
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Cari gerakan..."
+                  placeholder="Search exercises..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
               </div>
@@ -468,164 +298,79 @@ const AdminExercises = () => {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {categories.map(category => (
                   <option key={category} value={category}>
-                    {category === 'All' ? 'Semua Kategori' : category}
+                    {category === 'All' ? 'All Categories' : category}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Status Filter - IMPROVED */}
+            {/* Status Filter */}
             <div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="All">Semua Status</option>
-                <option value="Active">✓ Aktif</option>
-                <option value="Inactive">○ Nonaktif</option>
+                <option value="All">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
               </select>
             </div>
-          </div>
-
-          {/* Filter Summary - NEW */}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {searchTerm && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                Pencarian: "{searchTerm}"
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="ml-1 text-blue-600 hover:text-blue-800"
-                >
-                  ×
-                </button>
-              </span>
-            )}
-            
-            {selectedCategory !== 'All' && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                Kategori: {selectedCategory}
-                <button
-                  onClick={() => setSelectedCategory('All')}
-                  className="ml-1 text-green-600 hover:text-green-800"
-                >
-                  ×
-                </button>
-              </span>
-            )}
-            
-            {statusFilter !== 'All' && (
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                statusFilter === 'Active' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                Status: {statusFilter === 'Active' ? 'Aktif' : 'Nonaktif'}
-                <button
-                  onClick={() => setStatusFilter('All')}
-                  className={statusFilter === 'Active' ? 'ml-1 text-green-600 hover:text-green-800' : 'ml-1 text-red-600 hover:text-red-800'}
-                >
-                  ×
-                </button>
-              </span>
-            )}
-
-            {/* Clear All Filters */}
-            {(searchTerm || selectedCategory !== 'All' || statusFilter !== 'All') && (
-              <button
-                onClick={clearAllFilters}
-                className="text-sm text-gray-600 hover:text-gray-800 underline"
-              >
-                Hapus semua filter
-              </button>
-            )}
           </div>
         </div>
 
         {/* Results Info */}
-        <div className="mb-4 flex justify-between items-center">
+        <div className="mb-6 flex justify-between items-center">
           <p className="text-sm text-gray-600">
-            Menampilkan {indexOfFirstExercise + 1}-{Math.min(indexOfLastExercise, filteredExercises.length)} dari {filteredExercises.length} gerakan
+            Showing {indexOfFirstExercise + 1}-{Math.min(indexOfLastExercise, filteredExercises.length)} of {filteredExercises.length} exercises
           </p>
-          <p className="text-sm text-gray-500">
-            Halaman {currentPage} dari {totalPages}
-          </p>
+          {(searchTerm || selectedCategory !== 'All' || statusFilter !== 'All') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('All');
+                setStatusFilter('All');
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700 underline"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
 
-        {/* Exercise Grid - WITH VIDEO DEBUG */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+        {/* Exercise Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
           {currentExercises.map((exercise) => {
-            // DEBUG: Log exercise data saat render
             const videoId = extractVideoId(exercise.youtubeUrl);
             
-            console.log(`🔍 Rendering exercise: ${exercise.name}`, {
-              id: exercise.id,
-              isActive: exercise.isActive,
-              youtubeUrl: exercise.youtubeUrl,
-              youtubeVideoId: exercise.youtubeVideoId,
-              extractedVideoId: videoId,
-              hasVideo: !!exercise.youtubeUrl
-            });
-            
             return (
-              <div key={exercise.id} className="bg-white rounded-lg shadow border border-gray-200 hover:shadow-lg transition-shadow duration-200">
-                {/* Video Thumbnail - ALWAYS SHOW FOR ADMIN */}
-                <div className="aspect-video bg-gray-200 rounded-t-lg flex items-center justify-center relative overflow-hidden">
+              <div key={exercise.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                {/* Video Thumbnail */}
+                <div className="aspect-video bg-gray-100 rounded-t-lg flex items-center justify-center relative overflow-hidden">
                   {exercise.youtubeUrl && videoId ? (
                     <div className="relative w-full h-full">
-                      {/* DEBUG: Log when rendering video thumbnail */}
-                      {console.log(`🎥 Rendering video thumbnail for ${exercise.name} (${exercise.isActive ? 'ACTIVE' : 'INACTIVE'})`)}
-                      
                       <img
-                        src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
                         alt={exercise.name}
-                        className={`w-full h-full object-cover transition-opacity duration-200 ${
-                          exercise.isActive === false ? 'opacity-75' : 'opacity-100'
+                        className={`w-full h-full object-cover ${
+                          exercise.isActive === false ? 'opacity-60' : ''
                         }`}
                         onError={(e) => {
-                          console.warn(`⚠️ Thumbnail failed for ${exercise.name}, trying hqdefault`);
-                          e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-                        }}
-                        onLoad={() => {
-                          console.log(`✅ Thumbnail loaded for ${exercise.name}`);
+                          e.target.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
                         }}
                       />
-                      
-                      <div className={`absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center ${
-                        exercise.isActive === false 
-                          ? 'opacity-100' 
-                          : 'opacity-0 hover:opacity-100'
-                      } transition-opacity duration-200`}>
-                        <PlayIcon className="h-12 w-12 text-white opacity-80" />
-                        {exercise.isActive === false && (
-                          <div className="absolute bottom-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                            Inactive
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="absolute top-2 right-2">
-                        <span className={`text-white text-xs px-2 py-1 rounded-full ${
-                          exercise.isActive === false ? 'bg-gray-600' : 'bg-green-500'
-                        }`}>
-                          Video
-                        </span>
+                      <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <PlayIcon className="h-8 w-8 text-white" />
                       </div>
                     </div>
                   ) : (
-                    <div className={`text-center ${exercise.isActive === false ? 'opacity-60' : ''}`}>
-                      {/* DEBUG: Log when no video */}
-                      {console.log(`❌ No video for ${exercise.name}:`, { 
-                        youtubeUrl: exercise.youtubeUrl, 
-                        videoId 
-                      })}
-                      
-                      <PlayIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">Tidak ada video</p>
+                    <div className="text-center">
+                      <PlayIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-xs text-gray-500">No video</p>
                     </div>
                   )}
 
@@ -633,79 +378,67 @@ const AdminExercises = () => {
                   <div className="absolute top-2 left-2">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                       exercise.isActive === true 
-                        ? 'bg-green-100 text-green-800 border border-green-200' 
-                        : 'bg-red-100 text-red-800 border border-red-200'
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
                     }`}>
-                      {exercise.isActive === true ? 'Aktif' : 'Nonaktif'}
+                      {exercise.isActive === true ? 'Active' : 'Inactive'}
                     </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="absolute top-2 right-2 flex space-x-1">
+                    <button
+                      onClick={() => handleView(exercise)}
+                      className="bg-white bg-opacity-90 hover:bg-opacity-100 p-1 rounded transition-all"
+                      title="View"
+                    >
+                      <EyeIcon className="h-4 w-4 text-gray-600" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(exercise)}
+                      className="bg-white bg-opacity-90 hover:bg-opacity-100 p-1 rounded transition-all"
+                      title="Edit"
+                    >
+                      <PencilIcon className="h-4 w-4 text-blue-600" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Rest of the card content... */}
+                {/* Content */}
                 <div className="p-4">
-                  {/* Exercise info content stays the same */}
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
+                    <h3 className="font-medium text-gray-900 text-sm line-clamp-2 flex-1">
                       {exercise.name}
                     </h3>
-                    <div className="flex space-x-1 ml-2">
-                      <button
-                        onClick={() => handleView(exercise)}
-                        className="text-gray-600 hover:text-gray-800 p-1 hover:bg-gray-100 rounded transition-colors"
-                        title="Lihat Detail"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(exercise)}
-                        className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-colors"
-                        title="Edit Gerakan"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(exercise.id)}
-                        className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
-                        title="Hapus Gerakan"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 mb-3">
+                  <div className="mb-3">
                     <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryColor(exercise.category)}`}>
                       {exercise.category}
                     </span>
                   </div>
 
-                  <p className="text-xs text-gray-600 line-clamp-2 mb-3">
-                    {exercise.description || 'Tidak ada deskripsi'}
+                  <p className="text-xs text-gray-600 line-clamp-2 mb-4">
+                    {exercise.description || 'No description'}
                   </p>
 
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                    <span className={`inline-flex items-center ${exercise.youtubeUrl ? 'text-green-600' : 'text-orange-600'}`}>
-                      {exercise.youtubeUrl ? '✓ Ada video' : '○ Tidak ada video'}
-                    </span>
-                  </div>
-
-                  {/* Admin Actions */}
+                  {/* Action Buttons */}
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleEdit(exercise)}
-                      className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
+                      className="flex-1 bg-blue-600 text-white text-xs py-2 px-3 rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleToggleStatus(exercise)}
-                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200 ${
+                      className={`flex-1 text-xs py-2 px-3 rounded-md transition-colors ${
                         exercise.isActive === true
                           ? 'bg-red-100 text-red-700 hover:bg-red-200'
                           : 'bg-green-100 text-green-700 hover:bg-green-200'
                       }`}
                     >
-                      {exercise.isActive === true ? 'Nonaktifkan' : 'Aktifkan'}
+                      {exercise.isActive === true ? 'Deactivate' : 'Activate'}
                     </button>
                   </div>
                 </div>
@@ -715,65 +448,41 @@ const AdminExercises = () => {
         </div>
 
         {/* Empty State */}
-        {filteredExercises.length === 0 && !loading && !error && (
+        {filteredExercises.length === 0 && (
           <div className="text-center py-12">
-            <div className="mb-4">
-              <PlayIcon className="mx-auto h-12 w-12 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Tidak ada gerakan ditemukan
-            </h3>
+            <PlayIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No exercises found</h3>
             <p className="text-gray-500 mb-4">
               {searchTerm || selectedCategory !== 'All' || statusFilter !== 'All'
-                ? 'Coba ubah filter pencarian' 
-                : 'Mulai dengan menambahkan gerakan pertama'}
+                ? 'Try adjusting your filters' 
+                : 'Get started by adding your first exercise'}
             </p>
-            {(!searchTerm && selectedCategory === 'All' && statusFilter === 'All') ? (
-              <button
-                onClick={handleCreate}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
-              >
-                Tambah Gerakan Pertama
-              </button>
-            ) : (
-              <button
-                onClick={clearAllFilters}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
-              >
-                Hapus Semua Filter
-              </button>
-            )}
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Add First Exercise
+            </button>
           </div>
         )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center space-x-2 mt-8">
+          <div className="flex justify-center items-center space-x-2">
             <button
-              onClick={() => handlePageChange(currentPage - 1)}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
-              Sebelumnya
+              Previous
             </button>
             
-            {/* Page Numbers */}
-            {[...Array(Math.min(totalPages, 7))].map((_, i) => {
-              let pageNum;
-              if (totalPages <= 7) {
-                pageNum = i + 1;
-              } else if (currentPage <= 4) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 3) {
-                pageNum = totalPages - 6 + i;
-              } else {
-                pageNum = currentPage - 3 + i;
-              }
-
+            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+              const pageNum = i + 1;
               return (
                 <button
                   key={pageNum}
-                  onClick={() => handlePageChange(pageNum)}
+                  onClick={() => setCurrentPage(pageNum)}
                   className={`px-3 py-2 border rounded-md text-sm ${
                     currentPage === pageNum
                       ? 'bg-blue-600 text-white border-blue-600'
@@ -786,11 +495,11 @@ const AdminExercises = () => {
             })}
             
             <button
-              onClick={() => handlePageChange(currentPage + 1)}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
-              Selanjutnya
+              Next
             </button>
           </div>
         )}
