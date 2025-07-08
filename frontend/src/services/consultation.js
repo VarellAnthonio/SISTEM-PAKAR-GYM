@@ -5,7 +5,22 @@ export const consultationService = {
   create: async (consultationData) => {
     try {
       console.log('Sending consultation data to API:', consultationData);
-      const response = await apiService.consultations.create(consultationData);
+      
+      // 🔄 NEW: Clean data - remove undefined/empty bodyFatPercentage
+      const cleanedData = {
+        weight: consultationData.weight,
+        height: consultationData.height,
+        notes: consultationData.notes || ''
+      };
+      
+      // Only include bodyFatPercentage if it's provided and valid
+      if (consultationData.bodyFatPercentage && consultationData.bodyFatPercentage > 0) {
+        cleanedData.bodyFatPercentage = consultationData.bodyFatPercentage;
+      }
+      
+      console.log('Cleaned consultation data:', cleanedData);
+      
+      const response = await apiService.consultations.create(cleanedData);
       
       console.log('API Response:', response.data);
       
@@ -199,8 +214,11 @@ export const consultationService = {
         errors.push('Height must be between 1 and 250 cm');
       }
 
-      if (!data.bodyFatPercentage || data.bodyFatPercentage <= 0 || data.bodyFatPercentage > 70) {
-        errors.push('Body fat percentage must be between 1 and 70%');
+      // 🔄 NEW: Optional validation for body fat
+      if (data.bodyFatPercentage !== undefined && data.bodyFatPercentage !== null && data.bodyFatPercentage !== '') {
+        if (data.bodyFatPercentage <= 0 || data.bodyFatPercentage > 70) {
+          errors.push('Body fat percentage must be between 1 and 70%');
+        }
       }
 
       return {
@@ -213,41 +231,85 @@ export const consultationService = {
     formatConsultationResult: (consultation) => {
       if (!consultation) return null;
 
+      const isBMIOnly = consultation.isBMIOnly || !consultation.bodyFatPercentage;
+
       return {
         id: consultation.id,
         user: consultation.user?.name || 'Unknown',
         weight: consultation.weight,
         height: consultation.height,
-        bodyFatPercentage: consultation.bodyFatPercentage,
+        bodyFatPercentage: consultation.bodyFatPercentage, // ← Can be null
         bmi: consultation.bmi,
         bmiCategory: consultation.bmiCategory,
-        bodyFatCategory: consultation.bodyFatCategory,
+        bodyFatCategory: consultation.bodyFatCategory, // ← Can be null
         programCode: consultation.program?.code,
         programName: consultation.program?.name,
         bmiDisplay: this.getBMIDisplay(consultation.bmiCategory),
-        bodyFatDisplay: this.getBodyFatDisplay(consultation.bodyFatCategory),
+        bodyFatDisplay: consultation.bodyFatCategory ? 
+          this.getBodyFatDisplay(consultation.bodyFatCategory) : 
+          'Tidak diukur',
         timestamp: consultation.createdAt,
         notes: consultation.notes,
-        status: consultation.status
+        status: consultation.status,
+        isBMIOnly: isBMIOnly, // ← New flag
+        consultationType: isBMIOnly ? 'BMI Only' : 'Complete Consultation'
       };
     },
 
     // Get program mapping (for reference - actual logic is in backend)
-    getProgramMapping: () => {
+    etProgramMapping: () => {
       return {
-        'B1-L1': 'P1', // Underweight + Low → Fat Loss Program
-        'B1-L2': 'P5', // Underweight + Normal → Lean Muscle Program
-        'B1-L3': 'P9', // Underweight + High → Beginner Muscle Building Program
-        'B2-L1': 'P6', // Ideal + Low → Strength & Definition Program
-        'B2-L2': 'P2', // Ideal + Normal → Muscle Gain Program
-        'B2-L3': 'P7', // Ideal + High → Fat Burning & Toning Program
-        'B3-L1': 'P10', // Overweight + Low → Advanced Strength Program
-        'B3-L2': 'P8', // Overweight + Normal → Body Recomposition Program
-        'B3-L3': 'P3', // Overweight + High → Weight Loss Program
-        'B4-L3': 'P4', // Obese + High → Extreme Weight Loss Program
+        // BMI-only mapping (simple)
+        bmiOnly: {
+          'B1': 'P1', // Underweight → Fat Loss Program
+          'B2': 'P2', // Ideal → Muscle Gain Program
+          'B3': 'P3', // Overweight → Weight Loss Program
+          'B4': 'P4'  // Obese → Extreme Weight Loss Program
+        },
+        // Full mapping (BMI + Body Fat)
+        full: {
+          'B1-L1': 'P1', 'B1-L2': 'P5', 'B1-L3': 'P9',
+          'B2-L1': 'P6', 'B2-L2': 'P2', 'B2-L3': 'P7',
+          'B3-L1': 'P10', 'B3-L2': 'P8', 'B3-L3': 'P3',
+          'B4-L3': 'P4'
+        }
       };
     },
 
+    getConsultationType: (consultation) => {
+      const isBMIOnly = consultation.isBMIOnly || !consultation.bodyFatPercentage;
+      
+      if (isBMIOnly) {
+        return {
+          type: 'bmi_only',
+          display: 'BMI Only',
+          description: 'Rekomendasi berdasarkan BMI saja',
+          accuracy: 'basic',
+          icon: '📊'
+        };
+      }
+      
+      return {
+        type: 'complete',
+        display: 'Complete Consultation', 
+        description: 'Rekomendasi berdasarkan BMI dan Body Fat',
+        accuracy: 'high',
+        icon: '🔬'
+      };
+    },
+
+    // 🔄 NEW: Check if consultation can be improved
+    canImproveConsultation: (consultation) => {
+      const isBMIOnly = consultation.isBMIOnly || !consultation.bodyFatPercentage;
+      return {
+        canImprove: isBMIOnly,
+        suggestion: isBMIOnly ? 
+          'Lakukan konsultasi lengkap dengan data body fat untuk rekomendasi yang lebih akurat' :
+          'Konsultasi sudah lengkap dengan data BMI dan body fat',
+        improveBy: isBMIOnly ? 'adding_body_fat' : null
+      };
+    },
+    
     // Check if combination is realistic (for reference)
     isRealisticCombination: (bmiCategory, bodyFatCategory) => {
       const realisticCombinations = [

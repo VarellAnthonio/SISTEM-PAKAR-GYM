@@ -57,7 +57,7 @@ export const consultationValidator = [
     .notEmpty().withMessage('Height is required')
     .isFloat({ min: 50, max: 300 }).withMessage('Height must be between 50 and 300 cm'),
   body('bodyFatPercentage')
-    .notEmpty().withMessage('Body fat percentage is required')
+    .optional({ nullable: true, checkFalsy: true }) 
     .isFloat({ min: 1, max: 70 }).withMessage('Body fat percentage must be between 1 and 70%')
 ];
 
@@ -274,12 +274,16 @@ export const forwardChainingTestValidator = [
     .isFloat({ min: 50, max: 300 }).withMessage('Height must be between 50 and 300 cm'),
   
   body('bodyFatPercentage')
-    .notEmpty().withMessage('Body fat percentage is required')
+    .optional({ nullable: true, checkFalsy: true }) 
     .isFloat({ min: 1, max: 70 }).withMessage('Body fat percentage must be between 1 and 70%'),
   
   body('gender')
     .notEmpty().withMessage('Gender is required')
-    .isIn(['male', 'female']).withMessage('Gender must be either male or female')
+    .isIn(['male', 'female']).withMessage('Gender must be either male or female'),
+    
+  body('testType')
+    .optional()
+    .isIn(['bmi_only', 'full_consultation']).withMessage('Test type must be bmi_only or full_consultation')
 ];
 
 // User preferences validators

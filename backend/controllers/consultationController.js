@@ -12,10 +12,10 @@ export const createConsultation = async (req, res) => {
     console.log('Consultation request:', { userId, weight, height, bodyFatPercentage });
 
     // Validation
-    if (!weight || !height || !bodyFatPercentage) {
+    if (!weight || !height) { 
       return res.status(400).json({
         success: false,
-        message: 'Weight, height, and body fat percentage are required'
+        message: 'Weight and height are required'
       });
     }
 
@@ -34,27 +34,32 @@ export const createConsultation = async (req, res) => {
       });
     }
 
-    if (bodyFatPercentage <= 0 || bodyFatPercentage > 70) {
-      return res.status(400).json({
-        success: false,
-        message: 'Body fat percentage must be between 1 and 70%'
-      });
+    if (bodyFatPercentage !== undefined && bodyFatPercentage !== null && bodyFatPercentage !== '') {
+      if (bodyFatPercentage <= 0 || bodyFatPercentage > 70) {
+        return res.status(400).json({
+          success: false,
+          message: 'Body fat percentage must be between 1 and 70%'
+        });
+      }
     }
 
     console.log('Validation passed, creating consultation...');
 
-    // Create consultation using forward chaining
-    const consultation = await Consultation.createWithForwardChaining({
+    const consultationData = {
       userId,
       weight: parseFloat(weight),
       height: parseFloat(height),
-      bodyFatPercentage: parseFloat(bodyFatPercentage),
+      bodyFatPercentage: bodyFatPercentage ? parseFloat(bodyFatPercentage) : null, 
       notes
-    });
+    };
+
+    // Create consultation using forward chaining
+    const consultation = await Consultation.createWithForwardChaining(consultationData);
 
     console.log('Consultation created successfully:', { 
       id: consultation.id, 
-      programCode: consultation.program?.code 
+      programCode: consultation.program?.code,
+      isBMIOnly: consultation.isBMIOnly || !consultation.bodyFatPercentage
     });
 
     res.status(201).json({

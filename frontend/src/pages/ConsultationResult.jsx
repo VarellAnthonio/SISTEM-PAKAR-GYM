@@ -102,14 +102,31 @@ const ConsultationResult = () => {
     return mapping[bmiCategory] || 'Unknown';
   };
 
-  const getBodyFatDisplay = (bodyFatCategory) => {
-    const mapping = {
-      'L1': 'Rendah',
-      'L2': 'Normal',
-      'L3': 'Tinggi'
-    };
-    return mapping[bodyFatCategory] || 'Unknown';
+  const getBodyFatDisplay = (category) => {
+  if (!category) return 'Tidak diukur'; 
+  
+  const mapping = {
+    'L1': 'Rendah',
+    'L2': 'Normal',
+    'L3': 'Tinggi'
   };
+  return mapping[category] || 'Unknown';
+};
+
+const getConsultationType = (result) => {
+  if (result.isBMIOnly || !result.bodyFatPercentage) {
+    return {
+      type: 'BMI Only',
+      description: 'Rekomendasi berdasarkan BMI saja',
+      icon: '📊'
+    };
+  }
+  return {
+    type: 'Complete Consultation',
+    description: 'Rekomendasi berdasarkan BMI dan Body Fat',
+    icon: '🔬'
+  };
+};
 
   const formatDateForPDF = (dateString) => {
     const date = new Date(dateString);
@@ -277,7 +294,6 @@ const ConsultationResult = () => {
             </p>
           </div>
 
-          {/* User Info */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2">
               Informasi Pengguna
@@ -296,20 +312,65 @@ const ConsultationResult = () => {
                   <span className="font-medium text-gray-700">Tinggi Badan:</span> 
                   <span className="ml-2 text-gray-900">{result.height} cm</span>
                 </p>
+                {/* 🔄 NEW: Consultation type indicator */}
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">Jenis Konsultasi:</span> 
+                  <span className="ml-2 text-gray-900">
+                    {getConsultationType(result).icon} {getConsultationType(result).type}
+                  </span>
+                </p>
               </div>
               <div className="space-y-2">
                 <p className="text-sm">
                   <span className="font-medium text-gray-700">BMI:</span> 
                   <span className="ml-2 text-gray-900">{result.bmi} ({getBMIDisplay(result.bmiCategory)})</span>
                 </p>
+                {/* 🔄 UPDATED: Handle optional body fat percentage */}
                 <p className="text-sm">
                   <span className="font-medium text-gray-700">Persentase Lemak:</span> 
-                  <span className="ml-2 text-gray-900">{result.bodyFatPercentage}% ({getBodyFatDisplay(result.bodyFatCategory)})</span>
+                  <span className="ml-2 text-gray-900">
+                    {result.bodyFatPercentage ? 
+                      `${result.bodyFatPercentage}% (${getBodyFatDisplay(result.bodyFatCategory)})` : 
+                      '❌ Tidak diukur (BMI saja)'
+                    }
+                  </span>
                 </p>
                 <p className="text-sm">
                   <span className="font-medium text-gray-700">Program:</span> 
                   <span className="ml-2 font-semibold text-blue-600">{programData.code} - {programData.name}</span>
                 </p>
+                {/* 🔄 NEW: Logic explanation */}
+                <p className="text-sm">
+                  <span className="font-medium text-gray-700">Logic:</span> 
+                  <span className="ml-2 text-gray-600 italic">
+                    {result.isBMIOnly || !result.bodyFatPercentage ? 
+                      `${result.bmiCategory} → ${programData.code} (BMI-only)` :
+                      `${result.bmiCategory} + ${result.bodyFatCategory} → ${programData.code}`
+                    }
+                  </span>
+                </p>
+              </div>
+            </div>
+            
+            {/* 🔄 NEW: Consultation type explanation */}
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <span className="text-2xl mr-3">{getConsultationType(result).icon}</span>
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">{getConsultationType(result).type}</h4>
+                  <p className="text-sm text-blue-800 mt-1">{getConsultationType(result).description}</p>
+                  {result.isBMIOnly || !result.bodyFatPercentage ? (
+                    <p className="text-xs text-blue-700 mt-2">
+                      Sistem menggunakan mapping sederhana: BMI kategori langsung menuju program yang sesuai.
+                      Untuk rekomendasi lebih spesifik, lakukan konsultasi lengkap dengan data body fat.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-blue-700 mt-2">
+                      Sistem menggunakan 10 kombinasi medis untuk memberikan rekomendasi yang sangat spesifik
+                      berdasarkan kondisi BMI dan persentase lemak tubuh Anda.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -382,6 +443,31 @@ const ConsultationResult = () => {
             </div>
           )}
 
+          {(!result.bodyFatPercentage || result.isBMIOnly) && (
+            <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg mb-8">
+              <h4 className="font-semibold text-green-900 mb-3 text-base">💡 Tingkatkan Akurasi Konsultasi</h4>
+              <div className="space-y-2">
+                <p className="text-sm text-green-800">
+                  Anda menggunakan konsultasi BMI saja. Untuk rekomendasi yang lebih akurat dan personal:
+                </p>
+                <ul className="text-sm text-green-800 space-y-1 ml-4">
+                  <li>• Ukur persentase lemak tubuh dengan body fat analyzer</li>
+                  <li>• Lakukan konsultasi ulang dengan data lengkap</li>
+                  <li>• Dapatkan akses ke 10 program spesifik yang disesuaikan kondisi tubuh</li>
+                  <li>• Program akan lebih efektif untuk mencapai tujuan fitness Anda</li>
+                </ul>
+                <div className="mt-3">
+                  <button
+                    onClick={() => navigate('/consultation')}
+                    className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    🔄 Lakukan Konsultasi Lengkap
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Important Notes */}
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg mb-8">
             <h4 className="font-semibold text-yellow-900 mb-4 text-base">Catatan Penting & Guidelines Medis</h4>

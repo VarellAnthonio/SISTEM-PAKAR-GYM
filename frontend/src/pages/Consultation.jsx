@@ -12,7 +12,7 @@ const Consultation = () => {
   const [formData, setFormData] = useState({
     weight: '',
     height: '',
-    bodyFatPercentage: ''
+    bodyFatPercentage: '' // ← Starts empty, user can leave it empty
   });
   const [errors, setErrors] = useState({});
 
@@ -32,6 +32,7 @@ const Consultation = () => {
     }
   };
 
+  // 🔄 UPDATED: Validation with optional body fat
   const validateForm = () => {
     const newErrors = {};
 
@@ -47,9 +48,8 @@ const Consultation = () => {
       newErrors.height = 'Tinggi badan tidak valid (1-250 cm)';
     }
 
-    if (!formData.bodyFatPercentage) {
-      newErrors.bodyFatPercentage = 'Persentase lemak tubuh harus diisi';
-    } else if (formData.bodyFatPercentage <= 0 || formData.bodyFatPercentage > 50) {
+    // 🔄 NEW: Optional validation for body fat
+    if (formData.bodyFatPercentage && (formData.bodyFatPercentage <= 0 || formData.bodyFatPercentage > 50)) {
       newErrors.bodyFatPercentage = 'Persentase lemak tidak valid (1-50%)';
     }
 
@@ -65,12 +65,17 @@ const Consultation = () => {
     setLoading(true);
     
     try {
-      // Send consultation data to backend for forward chaining
+      // 🔄 UPDATED: Handle both BMI-only and full consultation
       const consultationData = {
         weight: parseFloat(formData.weight),
         height: parseFloat(formData.height),
-        bodyFatPercentage: parseFloat(formData.bodyFatPercentage),
-        notes: 'Konsultasi program olahraga'
+        // Only include bodyFatPercentage if it's provided
+        ...(formData.bodyFatPercentage && { 
+          bodyFatPercentage: parseFloat(formData.bodyFatPercentage) 
+        }),
+        notes: formData.bodyFatPercentage ? 
+          'Konsultasi lengkap dengan BMI dan Body Fat' : 
+          'Konsultasi BMI saja'
       };
 
       console.log('Sending consultation data to backend:', consultationData);
@@ -81,26 +86,31 @@ const Consultation = () => {
       if (result.success) {
         console.log('Backend forward chaining result:', result.data);
         
-        // Prepare consultation result for display
+        // 🔄 UPDATED: Handle both consultation types in result
         const consultationResult = {
           user: user.name,
           weight: formData.weight,
           height: formData.height,
-          bodyFatPercentage: formData.bodyFatPercentage,
+          bodyFatPercentage: formData.bodyFatPercentage || null, // ← Can be null
           bmi: result.data.bmi,
           bmiCategory: result.data.bmiCategory,
-          bodyFatCategory: result.data.bodyFatCategory,
+          bodyFatCategory: result.data.bodyFatCategory, // ← Can be null
           programCode: result.data.program?.code,
           programName: result.data.program?.name,
           timestamp: new Date().toISOString(),
-          consultationId: result.data.id
+          consultationId: result.data.id,
+          isBMIOnly: result.data.isBMIOnly || !formData.bodyFatPercentage // ← New flag
         };
         
         console.log('Navigating to results with:', consultationResult);
         
-        toast.success('Konsultasi berhasil! Program telah ditentukan.');
+        const successMessage = formData.bodyFatPercentage ? 
+          'Konsultasi lengkap berhasil! Program ditentukan berdasarkan BMI dan Body Fat.' :
+          'Konsultasi BMI berhasil! Program ditentukan berdasarkan BMI saja.';
         
-        // Navigate to results page with real data from backend
+        toast.success(successMessage);
+        
+        // Navigate to results page
         navigate('/consultation/result', { 
           state: { result: consultationResult } 
         });
@@ -134,12 +144,17 @@ const Consultation = () => {
           Konsultasi Program Olahraga
         </h1>
         
-        {/* System Info */}
+        {/* 🔄 UPDATED: System Info with BMI-only option */}
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-900 mb-2">Sistem Forward Chaining</h3>
-          <p className="text-sm text-blue-800">
-            Data Anda akan diproses menggunakan sistem forward chaining di backend untuk menentukan program yang tepat berdasarkan kondisi BMI dan persentase lemak tubuh.
+          <p className="text-sm text-blue-800 mb-2">
+            Data Anda akan diproses menggunakan sistem forward chaining di backend untuk menentukan program yang tepat.
           </p>
+          <div className="text-xs text-blue-700 bg-blue-100 rounded p-2">
+            <strong>2 Mode Konsultasi:</strong>
+            <br />• <strong>BMI saja:</strong> B1→P1, B2→P2, B3→P3, B4→P4
+            <br />• <strong>BMI + Body Fat:</strong> 10 kombinasi lengkap untuk rekomendasi optimal
+          </div>
         </div>
         
         <div className="bg-white rounded-lg shadow p-6">
@@ -154,7 +169,7 @@ const Consultation = () => {
             {/* Berat Badan */}
             <div>
               <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-2">
-                Berat Badan (kg):
+                Berat Badan (kg) *:
               </label>
               <input
                 type="number"
@@ -168,6 +183,7 @@ const Consultation = () => {
                 }`}
                 placeholder="Masukkan berat badan Anda"
                 disabled={loading}
+                required
               />
               {errors.weight && (
                 <p className="mt-1 text-sm text-red-600">{errors.weight}</p>
@@ -177,7 +193,7 @@ const Consultation = () => {
             {/* Tinggi Badan */}
             <div>
               <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-2">
-                Tinggi Badan (cm):
+                Tinggi Badan (cm) *:
               </label>
               <input
                 type="number"
@@ -191,16 +207,17 @@ const Consultation = () => {
                 }`}
                 placeholder="Masukkan tinggi badan Anda"
                 disabled={loading}
+                required
               />
               {errors.height && (
                 <p className="mt-1 text-sm text-red-600">{errors.height}</p>
               )}
             </div>
 
-            {/* Persentase Lemak */}
+            {/* 🔄 UPDATED: Persentase Lemak - Now OPTIONAL */}
             <div>
               <label htmlFor="bodyFatPercentage" className="block text-sm font-medium text-gray-700 mb-2">
-                Persentase Lemak (%):
+                Persentase Lemak (%) - <span className="text-green-600 font-medium">Opsional</span>:
               </label>
               <input
                 type="number"
@@ -212,12 +229,22 @@ const Consultation = () => {
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.bodyFatPercentage ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="Masukkan persentase lemak tubuh Anda"
+                placeholder="Kosongkan jika tidak tahu (opsional)"
                 disabled={loading}
               />
               {errors.bodyFatPercentage && (
                 <p className="mt-1 text-sm text-red-600">{errors.bodyFatPercentage}</p>
               )}
+              <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-xs text-gray-600">
+                  <strong>💡 Tips:</strong>
+                </p>
+                <ul className="text-xs text-gray-600 mt-1 space-y-1">
+                  <li>• <strong>Jika diisi:</strong> Sistem akan memberikan rekomendasi program yang sangat spesifik (10 kombinasi)</li>
+                  <li>• <strong>Jika dikosongkan:</strong> Sistem akan menggunakan BMI saja untuk rekomendasi dasar</li>
+                  <li>• Gunakan kalkulator kesehatan jika belum tahu persentase lemak tubuh</li>
+                </ul>
+              </div>
             </div>
 
             {/* Submit Button */}
@@ -230,24 +257,30 @@ const Consultation = () => {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Memproses Forward Chaining...
+                    {formData.bodyFatPercentage ? 
+                      'Memproses Konsultasi Lengkap...' : 
+                      'Memproses Konsultasi BMI...'}
                   </>
                 ) : (
-                  'Mulai Konsultasi'
+                  <>
+                    {formData.bodyFatPercentage ? 
+                      '🔬 Mulai Konsultasi Lengkap (BMI + Body Fat)' : 
+                      '📊 Mulai Konsultasi BMI Saja'}
+                  </>
                 )}
               </button>
             </div>
           </form>
         </div>
 
-        {/* Tips Box */}
+        {/* 🔄 UPDATED: Tips Box with BMI-only information */}
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-yellow-900 mb-2">Tips untuk Hasil Optimal:</h3>
           <ul className="text-sm text-yellow-800 space-y-1">
-            <li>• Pastikan data yang dimasukkan akurat</li>
-            <li>• Ukur persentase lemak tubuh menggunakan alat yang tepat</li>
+            <li>• <strong>Konsultasi BMI saja:</strong> Cepat dan mudah, rekomendasi program dasar</li>
+            <li>• <strong>Konsultasi lengkap:</strong> Lebih akurat dengan 10 program spesifik</li>
+            <li>• Pastikan data berat dan tinggi badan akurat</li>
             <li>• Konsultasi dilakukan sebaiknya di pagi hari setelah bangun tidur</li>
-            <li>• Gunakan kalkulator kesehatan jika belum tahu persentase lemak tubuh</li>
           </ul>
         </div>
 
