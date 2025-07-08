@@ -1,3 +1,4 @@
+// backend/models/Consultation.js - FIXED VERSION (Simplified)
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
@@ -50,9 +51,11 @@ const Consultation = sequelize.define('Consultation', {
       }
     }
   },
+  // 🔄 FIXED: Now nullable for BMI-only consultations
   bodyFatPercentage: {
     type: DataTypes.DECIMAL(5, 2),
-    allowNull: false,
+    allowNull: true, // ← CHANGED from false to true
+    field: 'body_fat_percentage',
     validate: {
       min: {
         args: [1],
@@ -72,9 +75,11 @@ const Consultation = sequelize.define('Consultation', {
     type: DataTypes.ENUM('B1', 'B2', 'B3', 'B4'),
     allowNull: false
   },
+  // 🔄 FIXED: Now nullable for BMI-only consultations
   bodyFatCategory: {
     type: DataTypes.ENUM('L1', 'L2', 'L3'),
-    allowNull: false
+    allowNull: true, // ← CHANGED from false to true
+    field: 'body_fat_category',
   },
   isDefault: {
     type: DataTypes.BOOLEAN,
@@ -110,6 +115,7 @@ const Consultation = sequelize.define('Consultation', {
     {
       fields: ['bmi_category', 'body_fat_category']
     }
+    // 🔄 REMOVED: Index for isBMIOnly (column doesn't exist yet)
   ]
 });
 
@@ -129,7 +135,10 @@ Consultation.prototype.getBMIDisplay = function() {
   return mapping[this.bmiCategory] || 'Unknown';
 };
 
+// 🔄 UPDATED: Handle nullable body fat category
 Consultation.prototype.getBodyFatDisplay = function() {
+  if (!this.bodyFatCategory) return 'Tidak diukur';
+  
   const mapping = {
     'L1': 'Rendah',
     'L2': 'Normal',
@@ -138,12 +147,33 @@ Consultation.prototype.getBodyFatDisplay = function() {
   return mapping[this.bodyFatCategory] || 'Unknown';
 };
 
+// 🔄 NEW: Check if consultation is BMI-only (computed property)
+Consultation.prototype.isBMIOnlyConsultation = function() {
+  return !this.bodyFatPercentage || this.bodyFatPercentage === null;
+};
+
+// 🔄 NEW: Get consultation type (computed property)
+Consultation.prototype.getConsultationType = function() {
+  return this.isBMIOnlyConsultation() ? {
+    type: 'bmi_only',
+    display: 'BMI Only',
+    description: 'Rekomendasi berdasarkan BMI saja'
+  } : {
+    type: 'complete',
+    display: 'Complete Consultation',
+    description: 'Rekomendasi berdasarkan BMI dan Body Fat'
+  };
+};
+
+// 🔄 UPDATED: Enhanced toJSON method
 Consultation.prototype.toJSON = function() {
   const values = Object.assign({}, this.get());
   return {
     ...values,
     bmiDisplay: this.getBMIDisplay(),
-    bodyFatDisplay: this.getBodyFatDisplay()
+    bodyFatDisplay: this.getBodyFatDisplay(),
+    isBMIOnly: this.isBMIOnlyConsultation(), // ← Computed property
+    consultationType: this.getConsultationType()
   };
 };
 

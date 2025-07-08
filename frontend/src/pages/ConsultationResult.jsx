@@ -103,30 +103,32 @@ const ConsultationResult = () => {
   };
 
   const getBodyFatDisplay = (category) => {
-  if (!category) return 'Tidak diukur'; 
-  
-  const mapping = {
-    'L1': 'Rendah',
-    'L2': 'Normal',
-    'L3': 'Tinggi'
-  };
-  return mapping[category] || 'Unknown';
-};
-
-const getConsultationType = (result) => {
-  if (result.isBMIOnly || !result.bodyFatPercentage) {
-    return {
-      type: 'BMI Only',
-      description: 'Rekomendasi berdasarkan BMI saja',
-      icon: '📊'
+    if (!category) return 'Tidak diukur'; 
+    
+    const mapping = {
+      'L1': 'Rendah',
+      'L2': 'Normal',
+      'L3': 'Tinggi'
     };
-  }
-  return {
-    type: 'Complete Consultation',
-    description: 'Rekomendasi berdasarkan BMI dan Body Fat',
-    icon: '🔬'
+    return mapping[category] || 'Unknown';
   };
-};
+
+  const getConsultationType = (result) => {
+    if (result.isBMIOnly || !result.bodyFatPercentage) {
+      return {
+        type: 'BMI Only',
+        description: 'Rekomendasi berdasarkan analisis BMI',
+        icon: '📊',
+        color: 'blue'
+      };
+    }
+    return {
+      type: 'Analisis Lengkap',
+      description: 'Rekomendasi berdasarkan BMI dan Body Fat',
+      icon: '🔬',
+      color: 'green'
+    };
+  };
 
   const formatDateForPDF = (dateString) => {
     const date = new Date(dateString);
@@ -208,7 +210,7 @@ const getConsultationType = (result) => {
       
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0];
-      const fileName = `Hasil_Konsultasi_${result.programCode}_${timestamp}.pdf`;
+      const fileName = `Program_Olahraga_${result.programCode}_${timestamp}.pdf`;
       
       // Save PDF
       toast.loading('Menyimpan file...', { id: 'pdf-generation' });
@@ -232,7 +234,7 @@ const getConsultationType = (result) => {
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Memuat hasil konsultasi dari database...</p>
+              <p className="text-gray-600">Memuat hasil konsultasi...</p>
             </div>
           </div>
         </div>
@@ -247,7 +249,7 @@ const getConsultationType = (result) => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <h1 className="text-xl font-bold text-gray-900 mb-4">Error Loading Program</h1>
-            <p className="text-gray-600 mb-6">Gagal memuat data program dari database.</p>
+            <p className="text-gray-600 mb-6">Gagal memuat data program.</p>
             <button
               onClick={() => navigate('/consultation')}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -260,325 +262,238 @@ const getConsultationType = (result) => {
     );
   }
 
+  const consultationType = getConsultationType(result);
+
   return (
     <SidebarLayout>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-6">
-          Hasil Konsultasi
+          Hasil Konsultasi Program Olahraga
         </h1>
-        
-        {/* Data Source Indicator */}
-        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
-          <p className="text-sm text-green-800">
-            ✅ <strong>Data Real-time:</strong> Program dan jadwal diambil langsung dari database (bukan mock-up)
-          </p>
-        </div>
         
         {/* PDF Content Area */}
         <div 
           ref={pdfRef} 
           data-pdf-content
-          className="bg-white p-8 rounded-lg shadow-lg"
+          className="bg-white rounded-lg shadow-lg overflow-hidden"
           style={{ minHeight: '800px' }}
         >
           {/* Header for PDF */}
-          <div className="text-center mb-8 border-b-2 border-gray-200 pb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 mb-6">
+            <h1 className="text-2xl lg:text-3xl font-bold mb-2">
               SISTEM PAKAR PROGRAM OLAHRAGA
             </h1>
-            <h2 className="text-xl font-semibold text-blue-600 mb-2">
-              Hasil Konsultasi Program Olahraga
+            <h2 className="text-lg lg:text-xl font-semibold mb-2">
+              Hasil Konsultasi & Rekomendasi Program
             </h2>
-            <p className="text-sm text-gray-600">
-              Tanggal Konsultasi: {formatDateForPDF(result.timestamp)}
+            <p className="text-sm opacity-90">
+              {formatDateForPDF(result.timestamp)}
             </p>
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2">
-              Informasi Pengguna
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-lg">
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">Nama:</span> 
-                  <span className="ml-2 text-gray-900">{result.user}</span>
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">Berat Badan:</span> 
-                  <span className="ml-2 text-gray-900">{result.weight} kg</span>
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">Tinggi Badan:</span> 
-                  <span className="ml-2 text-gray-900">{result.height} cm</span>
-                </p>
-                {/* 🔄 NEW: Consultation type indicator */}
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">Jenis Konsultasi:</span> 
-                  <span className="ml-2 text-gray-900">
-                    {getConsultationType(result).icon} {getConsultationType(result).type}
-                  </span>
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">BMI:</span> 
-                  <span className="ml-2 text-gray-900">{result.bmi} ({getBMIDisplay(result.bmiCategory)})</span>
-                </p>
-                {/* 🔄 UPDATED: Handle optional body fat percentage */}
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">Persentase Lemak:</span> 
-                  <span className="ml-2 text-gray-900">
-                    {result.bodyFatPercentage ? 
-                      `${result.bodyFatPercentage}% (${getBodyFatDisplay(result.bodyFatCategory)})` : 
-                      '❌ Tidak diukur (BMI saja)'
-                    }
-                  </span>
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">Program:</span> 
-                  <span className="ml-2 font-semibold text-blue-600">{programData.code} - {programData.name}</span>
-                </p>
-                {/* 🔄 NEW: Logic explanation */}
-                <p className="text-sm">
-                  <span className="font-medium text-gray-700">Logic:</span> 
-                  <span className="ml-2 text-gray-600 italic">
-                    {result.isBMIOnly || !result.bodyFatPercentage ? 
-                      `${result.bmiCategory} → ${programData.code} (BMI-only)` :
-                      `${result.bmiCategory} + ${result.bodyFatCategory} → ${programData.code}`
-                    }
-                  </span>
-                </p>
-              </div>
-            </div>
-            
-            {/* 🔄 NEW: Consultation type explanation */}
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start">
-                <span className="text-2xl mr-3">{getConsultationType(result).icon}</span>
-                <div>
-                  <h4 className="text-sm font-medium text-blue-900">{getConsultationType(result).type}</h4>
-                  <p className="text-sm text-blue-800 mt-1">{getConsultationType(result).description}</p>
-                  {result.isBMIOnly || !result.bodyFatPercentage ? (
-                    <p className="text-xs text-blue-700 mt-2">
-                      Sistem menggunakan mapping sederhana: BMI kategori langsung menuju program yang sesuai.
-                      Untuk rekomendasi lebih spesifik, lakukan konsultasi lengkap dengan data body fat.
-                    </p>
-                  ) : (
-                    <p className="text-xs text-blue-700 mt-2">
-                      Sistem menggunakan 10 kombinasi medis untuk memberikan rekomendasi yang sangat spesifik
-                      berdasarkan kondisi BMI dan persentase lemak tubuh Anda.
-                    </p>
-                  )}
+          <div className="p-6 space-y-8">
+            {/* User Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2 flex items-center">
+                <span className="bg-blue-100 text-blue-600 p-2 rounded-full mr-3">👤</span>
+                Informasi Pengguna
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-lg">
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Nama:</span> 
+                    <span className="font-medium text-gray-900">{result.user}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Berat Badan:</span> 
+                    <span className="font-medium text-gray-900">{result.weight} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tinggi Badan:</span> 
+                    <span className="font-medium text-gray-900">{result.height} cm</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">BMI:</span> 
+                    <span className="font-medium text-gray-900">{result.bmi} ({getBMIDisplay(result.bmiCategory)})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Body Fat:</span> 
+                    <span className="font-medium text-gray-900">
+                      {result.bodyFatPercentage ? 
+                        `${result.bodyFatPercentage}% (${getBodyFatDisplay(result.bodyFatCategory)})` : 
+                        '❌ Tidak diukur'
+                      }
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Jenis Analisis:</span> 
+                    <span className={`font-medium ${consultationType.color === 'blue' ? 'text-blue-600' : 'text-green-600'}`}>
+                      {consultationType.icon} {consultationType.type}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Program Schedule */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2">
-              Jadwal Program Latihan
-            </h3>
-            <div className="overflow-hidden border border-gray-300 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-1/6">
-                      Hari
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                      Program Latihan
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {Object.entries(programData.schedule || {}).map(([day, exercise]) => (
-                    <tr key={day} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-200">
-                        {day}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <div className="whitespace-pre-line leading-relaxed">
-                          {exercise || 'Belum ada jadwal'}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Additional Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Cardio Ratio */}
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
-              <h4 className="font-semibold text-blue-900 mb-3 text-base">Rasio Latihan</h4>
-              <p className="text-sm text-blue-800 leading-relaxed">
-                {programData.cardioRatio || '50% Kardio - 50% Beban'}
-              </p>
+            {/* Program Recommendation */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2 flex items-center">
+                <span className="bg-green-100 text-green-600 p-2 rounded-full mr-3">🎯</span>
+                Program Rekomendasi
+              </h3>
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+                <div className="text-center mb-4">
+                  <span className="bg-green-600 text-white px-4 py-2 rounded-full text-lg font-bold">
+                    {programData.code}
+                  </span>
+                  <h4 className="text-xl font-bold text-gray-900 mt-3">{programData.name}</h4>
+                  <p className="text-gray-700 mt-2">{programData.description}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="bg-white rounded-lg p-4 border border-green-200">
+                    <h5 className="font-semibold text-green-900 mb-2">💪 Rasio Latihan</h5>
+                    <p className="text-green-800 font-medium">
+                      {programData.cardioRatio || '50% Kardio - 50% Beban'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border border-blue-200">
+                    <h5 className="font-semibold text-blue-900 mb-2">🥗 Rekomendasi Diet</h5>
+                    <p className="text-blue-800 text-sm leading-relaxed">
+                      {programData.dietRecommendation ? 
+                        programData.dietRecommendation.substring(0, 100) + '...' :
+                        'Konsultasikan dengan ahli gizi untuk diet yang sesuai'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Diet Recommendation */}
-            <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
-              <h4 className="font-semibold text-green-900 mb-3 text-base">Rekomendasi Diet</h4>
-              <p className="text-sm text-green-800 leading-relaxed">
-                {programData.dietRecommendation || 'Konsultasikan dengan ahli gizi untuk rekomendasi diet yang sesuai.'}
-              </p>
+            {/* Training Schedule - IMPROVED LAYOUT */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2 flex items-center">
+                <span className="bg-purple-100 text-purple-600 p-2 rounded-full mr-3">📅</span>
+                Jadwal Latihan 7 Hari
+              </h3>
+              
+              {/* Mobile-First Cards Layout */}
+              <div className="space-y-4">
+                {Object.entries(programData.schedule || {}).map(([day, exercise]) => (
+                  <div key={day} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-3">
+                      <h4 className="font-semibold text-lg">{day}</h4>
+                    </div>
+                    <div className="p-4">
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {exercise || (
+                          <span className="text-gray-400 italic">Belum ada jadwal untuk hari ini</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Program Description */}
-          {programData.description && (
-            <div className="mb-8">
-              <h4 className="font-semibold text-gray-900 mb-3 text-base border-b border-gray-300 pb-2">
-                Deskripsi Program
+            {/* Diet Recommendation Full */}
+            {programData.dietRecommendation && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-2 flex items-center">
+                  <span className="bg-yellow-100 text-yellow-600 p-2 rounded-full mr-3">🥗</span>
+                  Panduan Diet Lengkap
+                </h3>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                  <p className="text-yellow-900 leading-relaxed whitespace-pre-line">
+                    {programData.dietRecommendation}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* BMI-Only Upgrade Suggestion */}
+            {(!result.bodyFatPercentage || result.isBMIOnly) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+                  💡 <span className="ml-2">Tingkatkan Akurasi Konsultasi</span>
+                </h4>
+                <div className="space-y-3">
+                  <p className="text-blue-800">
+                    Anda menggunakan analisis BMI saja. Untuk rekomendasi yang lebih personal dan akurat:
+                  </p>
+                  <ul className="text-blue-800 space-y-1 ml-4 list-disc">
+                    <li>Ukur persentase lemak tubuh dengan body fat analyzer</li>
+                    <li>Lakukan konsultasi ulang dengan data lengkap</li>
+                    <li>Dapatkan program yang disesuaikan kondisi tubuh spesifik</li>
+                  </ul>
+                  <div className="mt-4">
+                    <button
+                      onClick={() => navigate('/consultation')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      🔄 Lakukan Konsultasi Lengkap
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Safety Guidelines */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h4 className="font-semibold text-red-900 mb-4 flex items-center">
+                ⚠️ <span className="ml-2">Panduan Keamanan</span>
               </h4>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {programData.description}
-                </p>
-              </div>
-            </div>
-          )}
+              
+              <div className="space-y-4 text-red-800">
+                <div>
+                  <h5 className="font-medium mb-2">Sebelum Memulai:</h5>
+                  <ul className="text-sm space-y-1 ml-4 list-disc">
+                    <li>Konsultasikan dengan dokter sebelum memulai program latihan</li>
+                    <li>Lakukan pemanasan 5-10 menit sebelum latihan</li>
+                    <li>Pendinginan dengan stretching setelah latihan</li>
+                  </ul>
+                </div>
 
-          {(!result.bodyFatPercentage || result.isBMIOnly) && (
-            <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg mb-8">
-              <h4 className="font-semibold text-green-900 mb-3 text-base">💡 Tingkatkan Akurasi Konsultasi</h4>
-              <div className="space-y-2">
-                <p className="text-sm text-green-800">
-                  Anda menggunakan konsultasi BMI saja. Untuk rekomendasi yang lebih akurat dan personal:
-                </p>
-                <ul className="text-sm text-green-800 space-y-1 ml-4">
-                  <li>• Ukur persentase lemak tubuh dengan body fat analyzer</li>
-                  <li>• Lakukan konsultasi ulang dengan data lengkap</li>
-                  <li>• Dapatkan akses ke 10 program spesifik yang disesuaikan kondisi tubuh</li>
-                  <li>• Program akan lebih efektif untuk mencapai tujuan fitness Anda</li>
-                </ul>
-                <div className="mt-3">
-                  <button
-                    onClick={() => navigate('/consultation')}
-                    className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    🔄 Lakukan Konsultasi Lengkap
-                  </button>
+                <div>
+                  <h5 className="font-medium mb-2">Hentikan Latihan Jika:</h5>
+                  <ul className="text-sm space-y-1 ml-4 list-disc">
+                    <li>Merasakan nyeri dada atau sesak napas berlebihan</li>
+                    <li>Pusing, mual, atau kehilangan kesadaran</li>
+                    <li>Nyeri sendi atau otot yang tajam</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h5 className="font-medium mb-2">Tips Hidrasi:</h5>
+                  <ul className="text-sm space-y-1 ml-4 list-disc">
+                    <li>Minum 500-750ml air 2-3 jam sebelum latihan</li>
+                    <li>Konsumsi 150-250ml setiap 15-20 menit selama latihan</li>
+                    <li>Hidrasi optimal: 150% dari berat badan yang hilang setelah latihan</li>
+                  </ul>
                 </div>
               </div>
             </div>
-          )}
-          
-          {/* Important Notes */}
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg mb-8">
-            <h4 className="font-semibold text-yellow-900 mb-4 text-base">Catatan Penting & Guidelines Medis</h4>
-            
-            <div className="space-y-4">
-              {/* General Safety */}
-              <div>
-                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Keamanan Umum:</h5>
-                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
-                  <li>• Konsultasikan dengan dokter sebelum memulai program latihan</li>
-                  <li>• Lakukan pemanasan 5-10 menit sebelum latihan</li>
-                  <li>• Pendinginan 5-10 menit setelah latihan dengan stretching</li>
-                  <li>• Hentikan latihan jika merasakan nyeri dada, pusing, atau sesak napas</li>
-                </ul>
+
+            {/* Footer */}
+            <div className="text-center border-t border-gray-200 pt-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700">
+                  Program ini dibuat oleh Sistem Pakar Program Olahraga
+                </p>
+                <p className="text-xs text-gray-500">
+                  Tanggal Cetak: {new Date().toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Konsultasikan dengan pelatih profesional untuk hasil optimal
+                </p>
               </div>
-
-              {/* Heart Rate Guidelines */}
-              <div>
-                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Panduan Heart Rate (Detak Jantung):</h5>
-                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
-                  <li>• <strong>Target Heart Rate:</strong> 50-85% dari Maximum Heart Rate (220 - umur)</li>
-                  <li>• <strong>Fat Burning Zone:</strong> 60-70% MHR untuk pembakaran lemak optimal</li>
-                  <li>• <strong>Cardio Zone:</strong> 70-85% MHR untuk peningkatan kardiovaskular</li>
-                  <li>• <strong>Recovery Zone:</strong> 50-60% MHR untuk active recovery</li>
-                  <li>• Gunakan heart rate monitor atau hitung manual: 15 detik × 4</li>
-                </ul>
-              </div>
-
-              {/* Weight Training Guidelines */}
-              <div>
-                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Panduan Beban Latihan:</h5>
-                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
-                  <li>• <strong>Pemula:</strong> Mulai dengan 40-60% dari 1RM (1 Rep Maximum)</li>
-                  <li>• <strong>Intermediate:</strong> 60-80% dari 1RM</li>
-                  <li>• <strong>Advanced:</strong> 80-95% dari 1RM</li>
-                  <li>• <strong>RPE Scale:</strong> Target intensitas 6-8 dari skala 1-10</li>
-                  <li>• Tingkatkan beban 2.5-5% setiap 1-2 minggu jika form tetap baik</li>
-                </ul>
-              </div>
-
-              {/* Progressive Overload */}
-              <div>
-                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Progressive Overload:</h5>
-                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
-                  <li>• Tingkatkan volume latihan secara bertahap (10% rule)</li>
-                  <li>• Fokus pada teknik yang benar sebelum menambah beban</li>
-                  <li>• Berikan waktu recovery 48-72 jam untuk muscle group yang sama</li>
-                  <li>• Variasi latihan setiap 4-6 minggu untuk menghindari plateau</li>
-                </ul>
-              </div>
-
-              {/* Hydration & Nutrition */}
-              <div>
-                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Hidrasi & Nutrisi:</h5>
-                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
-                  <li>• Minum 500-750ml air 2-3 jam sebelum latihan</li>
-                  <li>• Konsumsi 150-250ml setiap 15-20 menit selama latihan</li>
-                  <li>• Post-workout: 150% dari berat badan yang hilang</li>
-                  <li>• Pre-workout meal: 1-4 jam sebelum latihan (karbohidrat + protein)</li>
-                  <li>• Post-workout: Dalam 30-60 menit (protein + karbohidrat)</li>
-                </ul>
-              </div>
-
-              {/* Recovery & Sleep */}
-              <div>
-                <h5 className="font-medium text-yellow-900 mb-2 text-sm">Recovery & Istirahat:</h5>
-                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
-                  <li>• Tidur 7-9 jam per malam untuk recovery optimal</li>
-                  <li>• Ambil rest day 1-2 hari per minggu</li>
-                  <li>• Active recovery: jalan santai, yoga, atau stretching ringan</li>
-                  <li>• Monitor tanda overtraining: kelelahan, penurunan performa, mood changes</li>
-                </ul>
-              </div>
-
-              {/* When to Stop */}
-              <div>
-                <h5 className="font-medium text-red-700 mb-2 text-sm">Hentikan Latihan Segera Jika:</h5>
-                <ul className="text-sm text-red-700 space-y-1 ml-4">
-                  <li>• Nyeri dada atau sesak napas berlebihan</li>
-                  <li>• Pusing, mual, atau kehilangan kesadaran</li>
-                  <li>• Nyeri sendi atau otot yang tajam</li>
-                  <li>• Heart rate tidak kembali normal setelah 5 menit recovery</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-yellow-200">
-              <p className="text-xs text-yellow-700 italic">
-                *Guidelines berdasarkan American College of Sports Medicine (ACSM), 
-                American Heart Association (AHA), dan WHO Physical Activity Guidelines.
-              </p>
-            </div>
-          </div>
-
-          {/* Footer for PDF */}
-          <div className="border-t-2 border-gray-200 pt-6 text-center">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">
-                Dokumen ini dihasilkan oleh Sistem Pakar Program Olahraga
-              </p>
-              <p className="text-xs text-gray-500">
-                Tanggal Cetak: {new Date().toLocaleDateString('id-ID', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-              <p className="text-xs text-gray-500">
-                Konsultasikan dengan pelatih profesional untuk hasil optimal
-              </p>
             </div>
           </div>
         </div>
@@ -635,26 +550,12 @@ const getConsultationType = (result) => {
             <div>
               <h3 className="text-sm font-medium text-green-900 mb-1">Hasil Tersimpan Otomatis</h3>
               <p className="text-sm text-green-800">
-                Hasil konsultasi Anda sudah otomatis tersimpan ke database saat forward chaining dijalankan. 
-                Anda dapat mengdownload PDF untuk referensi offline atau melihat riwayat kapan saja.
+                Hasil konsultasi Anda sudah tersimpan di sistem. 
+                Download PDF untuk referensi offline atau lihat riwayat kapan saja.
               </p>
             </div>
           </div>
         </div>
-
-        {/* Debug Info (only in development) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Debug Info</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p>Program Code: {programData.code}</p>
-              <p>BMI Category: {result.bmiCategory}</p>
-              <p>Body Fat Category: {result.bodyFatCategory}</p>
-              <p>Schedule Keys: {Object.keys(programData.schedule || {}).join(', ')}</p>
-              <p>Data Source: Database API</p>
-            </div>
-          </div>
-        )}
       </div>
     </SidebarLayout>
   );

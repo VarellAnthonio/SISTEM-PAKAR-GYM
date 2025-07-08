@@ -189,6 +189,7 @@ Rule.forwardChaining = async function(bmi, bodyFat, gender) {
 };
 
 // 🔄 UPDATED: createWithForwardChaining method
+// 🔄 UPDATED: createWithForwardChaining method - SIMPLIFIED VERSION
 Consultation.createWithForwardChaining = async function(consultationData) {
   const { userId, weight, height, bodyFatPercentage, notes } = consultationData;
   
@@ -215,7 +216,7 @@ Consultation.createWithForwardChaining = async function(consultationData) {
       throw new Error('No program found by forward chaining');
     }
 
-    // 🔄 UPDATED: Create consultation record with optional body fat
+    // 🔄 SIMPLIFIED: Create consultation record without isBMIOnly field
     const consultation = await this.create({
       userId,
       programId: chainResult.program.id,
@@ -226,7 +227,6 @@ Consultation.createWithForwardChaining = async function(consultationData) {
       bmi: parseFloat(bmi.toFixed(2)),
       bmiCategory: chainResult.bmiCategory,
       bodyFatCategory: chainResult.bodyFatCategory, // ← Can be null for BMI-only
-      isBMIOnly: chainResult.isBMIOnly || false, // ← New field
       isDefault: chainResult.isDefault,
       notes,
       status: 'active'
@@ -234,7 +234,7 @@ Consultation.createWithForwardChaining = async function(consultationData) {
 
     console.log('Consultation created:', { 
       id: consultation.id,
-      isBMIOnly: consultation.isBMIOnly 
+      isBMIOnly: !consultation.bodyFatPercentage  // ← Computed property
     });
 
     // Return consultation with associations
