@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, UserIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -36,13 +36,13 @@ const Login = () => {
     const newErrors = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email harus diisi';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = 'Format email tidak valid';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Password harus diisi';
     }
 
     setErrors(newErrors);
@@ -69,88 +69,157 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+        
+        {/* Header dengan Logo dan Judul */}
+        <div className="text-center">
+          <div className="mx-auto h-20 w-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
+            <UserIcon className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Sistem Pakar
+          </h1>
+          <h2 className="text-xl font-semibold text-blue-600 mb-2">
+            Program Olahraga
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
-              create a new account
-            </Link>
+          <p className="text-sm text-gray-600 max-w-sm mx-auto">
+            Dapatkan rekomendasi program olahraga yang tepat berdasarkan kondisi tubuh Anda
           </p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+
+        {/* Form Container */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 space-y-6">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Masuk ke Akun Anda</h3>
+            <p className="text-sm text-gray-600">
+              Silakan masuk untuk mengakses sistem konsultasi
+            </p>
+          </div>
+          
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            
+            {/* Email Field */}
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Alamat Email
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
-                placeholder="Email address"
-                value={formData.email}
-                onChange={handleChange}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <UserIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className={`block w-full pl-10 pr-3 py-3 border ${
+                    errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  } rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200`}
+                  placeholder="nama@email.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                <p className="mt-2 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.email}
+                </p>
               )}
             </div>
             
-            <div className="relative">
-              <label htmlFor="password" className="sr-only">
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 pr-10 border ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <EyeIcon className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  className={`block w-full pl-10 pr-12 py-3 border ${
+                    errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  } rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200`}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                <p className="mt-2 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.password}
+                </p>
               )}
             </div>
-          </div>
 
-          <div>
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <LockClosedIcon className="h-5 w-5 mr-2" />
+                  Masuk ke Sistem
+                </>
+              )}
             </button>
+          </form>
+
+          {/* Register Link */}
+          <div className="text-center pt-4 border-t border-gray-100">
+            <p className="text-sm text-gray-600">
+              Belum memiliki akun?{' '}
+              <Link 
+                to="/register" 
+                className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+              >
+                Daftar sekarang
+              </Link>
+            </p>
           </div>
-        </form>
+        </div>
+
+        {/* Demo Credentials */}
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h4 className="text-xs font-medium text-gray-700 mb-2 text-center">Demo Credentials</h4>
+          <div className="grid grid-cols-1 gap-2 text-xs">
+            <div className="bg-white rounded p-2 border">
+              <span className="font-medium text-gray-600">Admin:</span>
+              <span className="ml-2 text-gray-700">admin@gymsporra.com / admin123</span>
+            </div>
+            <div className="bg-white rounded p-2 border">
+              <span className="font-medium text-gray-600">User:</span>
+              <span className="ml-2 text-gray-700">john@example.com / password123</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
