@@ -1,4 +1,4 @@
-// backend/controllers/userController.js
+// backend/controllers/userController.js - SIMPLIFIED VERSION (View, Toggle, Delete Only)
 import { User, Consultation } from '../models/index.js';
 import { Op } from 'sequelize';
 
@@ -62,7 +62,7 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// @desc    Get single user
+// @desc    Get single user (Admin only)
 // @route   GET /api/users/:id
 // @access  Private (Admin)
 export const getUserById = async (req, res) => {
@@ -103,101 +103,10 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// @desc    Update user
-// @route   PUT /api/users/:id
-// @access  Private (Admin)
-export const updateUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, email, role, isActive } = req.body;
+// REMOVED: updateUser function - Admin tidak bisa edit user info
 
-    // Check if user exists
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Prevent admin from deactivating themselves
-    if (user.id === req.user.id && isActive === false) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot deactivate your own account'
-      });
-    }
-
-    // Prevent changing role of self
-    if (user.id === req.user.id && role && role !== user.role) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot change your own role'
-      });
-    }
-
-    // Check if email is already taken by another user
-    if (email && email !== user.email) {
-      const existingUser = await User.findOne({ 
-        where: { 
-          email,
-          id: { [Op.ne]: id }
-        } 
-      });
-      
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email already exists'
-        });
-      }
-    }
-
-    // Update user
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (email !== undefined) updateData.email = email;
-    if (role !== undefined) updateData.role = role;
-    if (isActive !== undefined) updateData.isActive = isActive;
-
-    await user.update(updateData);
-
-    // Fetch updated user without password
-    const updatedUser = await User.findByPk(id, {
-      attributes: { exclude: ['password'] }
-    });
-
-    res.json({
-      success: true,
-      message: 'User updated successfully',
-      data: updatedUser
-    });
-
-  } catch (error) {
-    console.error('Update user error:', error);
-    
-    if (error.name === 'SequelizeValidationError') {
-      const validationErrors = error.errors.map(err => ({
-        field: err.path,
-        message: err.message
-      }));
-      
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: validationErrors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update user'
-    });
-  }
-};
-
-// @desc    Delete user
-// @route   DELETE /api/users/:id
+// @desc    Delete user (Admin only)
+// @route   DELETE /api/users/:id  
 // @access  Private (Admin)
 export const deleteUser = async (req, res) => {
   try {
@@ -212,11 +121,19 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    // Prevent admin from deleting themselves
+    // ENHANCED: Prevent admin from deleting themselves
     if (user.id === req.user.id) {
       return res.status(400).json({
         success: false,
         message: 'You cannot delete your own account'
+      });
+    }
+
+    // ENHANCED: Prevent deleting admin accounts for security
+    if (user.role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete administrator accounts for security reasons'
       });
     }
 
@@ -228,7 +145,7 @@ export const deleteUser = async (req, res) => {
     if (consultationCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete user with ${consultationCount} consultation(s). Please transfer or delete consultations first.`
+        message: `Cannot delete user with ${consultationCount} consultation(s). User has existing data in the system.`
       });
     }
 
@@ -248,7 +165,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// @desc    Toggle user status
+// @desc    Toggle user status (Admin only)
 // @route   PATCH /api/users/:id/toggle
 // @access  Private (Admin)
 export const toggleUserStatus = async (req, res) => {
@@ -263,11 +180,19 @@ export const toggleUserStatus = async (req, res) => {
       });
     }
 
-    // Prevent admin from deactivating themselves
+    // ENHANCED: Prevent admin from deactivating themselves
     if (user.id === req.user.id && user.isActive) {
       return res.status(400).json({
         success: false,
         message: 'You cannot deactivate your own account'
+      });
+    }
+
+    // ENHANCED: Additional protection for admin accounts
+    if (user.role === 'admin' && user.id !== req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot modify other administrator accounts'
       });
     }
 
@@ -293,7 +218,7 @@ export const toggleUserStatus = async (req, res) => {
   }
 };
 
-// @desc    Get user statistics
+// @desc    Get user statistics (Admin only)
 // @route   GET /api/users/stats
 // @access  Private (Admin)
 export const getUserStats = async (req, res) => {
@@ -353,94 +278,7 @@ export const getUserStats = async (req, res) => {
   }
 };
 
-// @desc    Reset user password (Admin only)
-// @route   POST /api/users/:id/reset-password
-// @access  Private (Admin)
-export const resetUserPassword = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { newPassword } = req.body;
-
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters'
-      });
-    }
-
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Update password (will be hashed by model hook)
-    await user.update({ password: newPassword });
-
-    res.json({
-      success: true,
-      message: 'Password reset successfully'
-    });
-
-  } catch (error) {
-    console.error('Reset password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to reset password'
-    });
-  }
-};
-
-// @desc    Change user role
-// @route   PATCH /api/users/:id/role
-// @access  Private (Admin)
-export const changeUserRole = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { role } = req.body;
-
-    if (!role || !['user', 'admin'].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid role. Must be either "user" or "admin"'
-      });
-    }
-
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Prevent changing own role
-    if (user.id === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot change your own role'
-      });
-    }
-
-    await user.update({ role });
-
-    res.json({
-      success: true,
-      message: `User role changed to ${role} successfully`,
-      data: {
-        id: user.id,
-        name: user.name,
-        role: role
-      }
-    });
-
-  } catch (error) {
-    console.error('Change user role error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to change user role'
-    });
-  }
-};
+// REMOVED FUNCTIONS (no longer supported):
+// ❌ updateUser() - Admin tidak bisa edit user info
+// ❌ resetUserPassword() - Admin tidak bisa reset password  
+// ❌ changeUserRole() - Admin tidak bisa ubah role

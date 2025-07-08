@@ -1,17 +1,13 @@
-// backend/routes/userRoutes.js
+// backend/routes/userRoutes.js - SIMPLIFIED VERSION
 import express from 'express';
 import {
   getAllUsers,
   getUserById,
-  updateUser,
   deleteUser,
   toggleUserStatus,
-  getUserStats,
-  resetUserPassword,
-  changeUserRole
+  getUserStats
 } from '../controllers/userController.js';
 import { protect, authorize } from '../middleware/auth.js';
-import { updateUserValidator, resetPasswordValidator, validate } from '../utils/validators.js';
 
 const router = express.Router();
 
@@ -19,7 +15,7 @@ const router = express.Router();
 router.use(protect);
 router.use(authorize('admin'));
 
-// User management routes
+// SIMPLIFIED: User management routes (View, Toggle, Delete only)
 router.route('/')
   .get(getAllUsers);
 
@@ -28,14 +24,9 @@ router.route('/stats')
 
 router.route('/:id')
   .get(getUserById)
-  .put(updateUserValidator, validate, updateUser)
   .delete(deleteUser);
 
-// User status management
+// User status management only
 router.patch('/:id/toggle', toggleUserStatus);
-router.patch('/:id/role', changeUserRole);
-
-// Password management
-router.post('/:id/reset-password', resetPasswordValidator, validate, resetUserPassword);
 
 export default router;

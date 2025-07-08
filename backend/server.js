@@ -69,7 +69,6 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// API info route
 app.get('/api', (req, res) => {
   res.json({
     name: 'Sistem Pakar Program Olahraga API',
@@ -80,7 +79,8 @@ app.get('/api', (req, res) => {
       consultations: '/api/consultations/*',
       programs: '/api/programs/*',
       rules: '/api/rules/*',
-      exercises: '/api/exercises/*', // NEW: Exercise endpoints
+      exercises: '/api/exercises/*',
+      users: '/api/users/*', 
       health: '/api/health',
       info: '/api'
     },
@@ -92,9 +92,10 @@ app.get('/api', (req, res) => {
       'BMI & Body Fat Analysis',
       'Program Recommendations',
       'Consultation Management',
-      'Program CRUD Operations',
-      'Rule Management System',
-      'Exercise Management with YouTube Integration', // NEW: Exercise feature
+      'Program Content Editing (Admin)',
+      'Rule Assignment Management (Admin)',
+      'Exercise Management with YouTube Integration',
+      'Simplified User Management (View, Toggle, Delete)', // UPDATED
       'Real-time Forward Chaining Testing'
     ]
   });
@@ -127,17 +128,24 @@ app.use('*', (req, res) => {
       'GET /api/consultations/:id',
       'GET /api/programs',
       'GET /api/programs/:code',
+      'PUT /api/programs/:id', // EDIT ONLY
       'GET /api/rules',
-      'PUT /api/rules/:id',
+      'PUT /api/rules/:id', // ASSIGNMENT ONLY
       'GET /api/rules/stats',
       'GET /api/rules/missing-combinations',
-      'GET /api/exercises', // NEW: Exercise endpoints
+      'GET /api/exercises',
       'POST /api/exercises',
       'GET /api/exercises/:id',
       'PUT /api/exercises/:id',
       'DELETE /api/exercises/:id',
+      'PATCH /api/exercises/:id/toggle',
       'GET /api/exercises/category/:category',
-      'GET /api/exercises/stats'
+      'GET /api/exercises/stats',
+      'GET /api/users', // List users
+      'GET /api/users/:id', // View user
+      'DELETE /api/users/:id', // Delete user
+      'PATCH /api/users/:id/toggle', // Toggle status
+      'GET /api/users/stats' // User statistics
     ]
   });
 });
