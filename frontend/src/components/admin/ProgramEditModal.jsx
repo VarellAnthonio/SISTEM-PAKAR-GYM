@@ -22,8 +22,7 @@ const ProgramEditModal = ({
       'Jumat': '',
       'Sabtu': '',
       'Minggu': ''
-    },
-    isActive: true
+    }
   });
   
   const [errors, setErrors] = useState({});
@@ -46,8 +45,7 @@ const ProgramEditModal = ({
           'Jumat': '',
           'Sabtu': '',
           'Minggu': ''
-        },
-        isActive: program.isActive !== undefined ? program.isActive : true
+        }
       };
       setFormData(newFormData);
       setErrors({});
@@ -55,7 +53,7 @@ const ProgramEditModal = ({
     }
   }, [program]);
 
-  // Track changes
+  // Track changes - REMOVED isActive from comparison
   useEffect(() => {
     if (program) {
       const hasChanged = 
@@ -63,7 +61,6 @@ const ProgramEditModal = ({
         formData.description !== (program.description || '') ||
         formData.cardioRatio !== (program.cardioRatio || '50% Kardio - 50% Beban') ||
         formData.dietRecommendation !== (program.dietRecommendation || '') ||
-        formData.isActive !== (program.isActive !== undefined ? program.isActive : true) ||
         JSON.stringify(formData.schedule) !== JSON.stringify(program.schedule || {});
       
       setHasChanges(hasChanged);
@@ -71,10 +68,10 @@ const ProgramEditModal = ({
   }, [formData, program]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
     
     // Clear error when user types
@@ -161,8 +158,7 @@ const ProgramEditModal = ({
         'Jumat': '',
         'Sabtu': '',
         'Minggu': ''
-      },
-      isActive: true
+      }
     });
     setErrors({});
     setActiveTab('basic');
@@ -200,10 +196,10 @@ const ProgramEditModal = ({
           <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 bg-white rounded-t-lg">
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                Edit Program {program?.code}
+                Edit Program Content - {program?.code}
               </h2>
               <p className="text-xs sm:text-sm text-gray-600 mt-1 hidden sm:block">
-                Edit konten program - struktur tidak dapat diubah
+                Edit program content only - system structure is protected
               </p>
             </div>
             <button
@@ -212,30 +208,6 @@ const ProgramEditModal = ({
             >
               <XMarkIcon className="h-5 w-5" />
             </button>
-          </div>
-
-          {/* PROTECTED FIELDS INFO - COMPACT */}
-          <div className="mx-3 sm:mx-4 mt-2 sm:mt-3 bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
-            <div className="flex items-start">
-              <LockClosedIcon className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="min-w-0 flex-1">
-                <h3 className="text-xs sm:text-sm font-medium text-gray-900 mb-1">Protected Fields</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 text-xs">
-                  <div>
-                    <span className="text-gray-600">Code:</span>
-                    <span className="ml-1 font-medium text-gray-900">{program?.code}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">BMI:</span>
-                    <span className="ml-1 font-medium text-gray-900">{getBMICategoryDisplay(program?.bmiCategory)}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Body Fat:</span>
-                    <span className="ml-1 font-medium text-gray-900">{getBodyFatCategoryDisplay(program?.bodyFatCategory)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* TABS - MOBILE FRIENDLY */}
@@ -249,7 +221,7 @@ const ProgramEditModal = ({
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Info Dasar
+                Program Info
               </button>
               <button
                 onClick={() => setActiveTab('schedule')}
@@ -259,7 +231,7 @@ const ProgramEditModal = ({
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Jadwal
+                Training Schedule
               </button>
               <button
                 onClick={() => setActiveTab('diet')}
@@ -269,7 +241,7 @@ const ProgramEditModal = ({
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Diet & Rasio
+                Diet & Cardio
               </button>
             </nav>
           </div>
@@ -281,51 +253,31 @@ const ProgramEditModal = ({
               {/* Basic Info Tab */}
               {activeTab === 'basic' && (
                 <div className="space-y-3 sm:space-y-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                        Nama Program *
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className={`w-full px-2 sm:px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                          errors.name ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="Fat Loss Program"
-                      />
-                      {errors.name && (
-                        <p className="mt-1 text-xs text-red-600">{errors.name}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                        Status Program
-                      </label>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="isActive"
-                          checked={formData.isActive}
-                          onChange={handleChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 text-xs sm:text-sm text-gray-700">
-                          Program Aktif
-                        </label>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Nonaktif = tidak akan muncul dalam forward chaining
-                      </p>
-                    </div>
-                  </div>
-
+                  
+                  {/* Program Name */}
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                      Deskripsi Program
+                      Program Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full px-2 sm:px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                        errors.name ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Fat Loss Program"
+                    />
+                    {errors.name && (
+                      <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                      Program Description
                     </label>
                     <textarea
                       name="description"
@@ -333,11 +285,28 @@ const ProgramEditModal = ({
                       onChange={handleChange}
                       rows={3}
                       className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                      placeholder="Deskripsi lengkap program olahraga..."
+                      placeholder="Comprehensive description of the exercise program..."
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Jelaskan tujuan dan karakteristik program ini
+                      Explain the program's purpose, target audience, and expected outcomes
                     </p>
+                  </div>
+
+                  {/* Program Info Display */}
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <h3 className="text-sm font-medium text-blue-900 mb-2">Program Information</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-blue-700 font-medium">Target:</span>
+                        <div className="text-blue-800">
+                          {getBMICategoryDisplay(program?.bmiCategory)} + {getBodyFatCategoryDisplay(program?.bodyFatCategory)}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-blue-700 font-medium">System Code:</span>
+                        <div className="text-blue-800 font-mono">{program?.code}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -349,9 +318,9 @@ const ProgramEditModal = ({
                     <div className="flex items-start">
                       <InformationCircleIcon className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
                       <div>
-                        <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-1">Jadwal Latihan 7 Hari</h3>
+                        <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-1">7-Day Training Schedule</h3>
                         <p className="text-xs text-blue-800">
-                          Isi jadwal latihan untuk setiap hari. Format: "1. Exercise: sets×reps"
+                          Format: "1. Exercise: sets×reps" or "Cardio: 30 minutes" or "Rest"
                         </p>
                       </div>
                     </div>
@@ -367,7 +336,7 @@ const ProgramEditModal = ({
                         onChange={(e) => handleScheduleChange(day, e.target.value)}
                         rows={3}
                         className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                        placeholder={`Jadwal untuk ${day}...`}
+                        placeholder={`Training plan for ${day}...`}
                       />
                     </div>
                   ))}
@@ -378,12 +347,14 @@ const ProgramEditModal = ({
                 </div>
               )}
 
-              {/* Diet & Ratio Tab */}
+              {/* Diet & Cardio Tab */}
               {activeTab === 'diet' && (
                 <div className="space-y-3 sm:space-y-4">
+                  
+                  {/* Cardio Ratio */}
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                      Rasio Kardio - Beban
+                      Cardio - Weight Training Ratio
                     </label>
                     <input
                       type="text"
@@ -394,13 +365,14 @@ const ProgramEditModal = ({
                       placeholder="50% Kardio - 50% Beban"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      Contoh: "70% Kardio - 30% Beban"
+                      Example: "70% Kardio - 30% Beban" or "30% Cardio - 70% Weight Training"
                     </p>
                   </div>
 
+                  {/* Diet Recommendation */}
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                      Rekomendasi Diet
+                      Diet Recommendation
                     </label>
                     <textarea
                       name="dietRecommendation"
@@ -408,17 +380,22 @@ const ProgramEditModal = ({
                       onChange={handleChange}
                       rows={6}
                       className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                      placeholder="Rekomendasi diet dan nutrisi untuk program ini..."
+                      placeholder="Comprehensive diet and nutrition guidelines for this program..."
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Include calorie guidance, macronutrient ratios, meal timing, and specific food recommendations
+                    </p>
                   </div>
 
+                  {/* Diet Guidelines */}
                   <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
-                    <h3 className="text-xs sm:text-sm font-medium text-green-900 mb-1">Tips Diet</h3>
+                    <h3 className="text-xs sm:text-sm font-medium text-green-900 mb-1">Diet Content Guidelines</h3>
                     <ul className="text-xs text-green-800 space-y-1">
-                      <li>• Sesuaikan dengan tujuan program</li>
-                      <li>• Berikan panduan kalori spesifik</li>
-                      <li>• Sertakan ratio makronutrien</li>
-                      <li>• Tambahkan contoh makanan</li>
+                      <li>• Include specific calorie targets based on program goals</li>
+                      <li>• Provide macronutrient ratios (protein, carbs, fats)</li>
+                      <li>• Suggest meal timing relative to workouts</li>
+                      <li>• List recommended and avoided foods</li>
+                      <li>• Include hydration guidelines</li>
                     </ul>
                   </div>
                 </div>
@@ -429,9 +406,9 @@ const ProgramEditModal = ({
             <div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 border-t border-gray-200 bg-gray-50 space-y-2 sm:space-y-0 rounded-b-lg">
               <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
                 {hasChanges ? (
-                  <span className="text-orange-600 font-medium">● Ada perubahan yang belum disimpan</span>
+                  <span className="text-orange-600 font-medium">● Unsaved changes</span>
                 ) : (
-                  <span>Tidak ada perubahan</span>
+                  <span>No changes</span>
                 )}
               </div>
               
@@ -441,7 +418,7 @@ const ProgramEditModal = ({
                   onClick={handleClose}
                   className="px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -451,10 +428,10 @@ const ProgramEditModal = ({
                   {loading ? (
                     <div className="flex items-center justify-center space-x-1">
                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                      <span>Simpan...</span>
+                      <span>Saving...</span>
                     </div>
                   ) : (
-                    'Simpan'
+                    'Save Changes'
                   )}
                 </button>
               </div>

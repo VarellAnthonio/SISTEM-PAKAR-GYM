@@ -50,10 +50,10 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
           <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                Detail Program {program.code}
+                Program Details - {program.code}
               </h2>
               <p className="text-xs sm:text-sm text-gray-600 mt-1 hidden sm:block">
-                Informasi lengkap program olahraga
+                Complete program information
               </p>
             </div>
             <button
@@ -70,31 +70,21 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
             {/* Program Overview - RESPONSIVE GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
-                <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-2">Informasi Dasar</h3>
+                <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-2">Program Information</h3>
                 <div className="space-y-1 sm:space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-blue-800">Kode Program:</span>
+                    <span className="text-xs text-blue-800">Program Code:</span>
                     <span className="text-xs sm:text-sm font-medium text-blue-900">{program.code}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-blue-800">Status:</span>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      program.isActive !== false 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {program.isActive !== false ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-blue-800">Kelengkapan:</span>
-                    <span className="text-xs sm:text-sm font-medium text-blue-900">{completion.percentage}%</span>
+                    <span className="text-xs text-blue-800">Medical Logic:</span>
+                    <span className="text-xs sm:text-sm font-medium text-green-600">✓ Validated</span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
-                <h3 className="text-xs sm:text-sm font-medium text-green-900 mb-2">Target Kondisi</h3>
+                <h3 className="text-xs sm:text-sm font-medium text-green-900 mb-2">Target Condition</h3>
                 <div className="space-y-1 sm:space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-green-800">BMI Category:</span>
@@ -123,25 +113,25 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
               <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">{program.name}</h3>
               {program.description && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
-                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1">Deskripsi Program</h4>
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1">Program Description</h4>
                   <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">{program.description}</p>
                 </div>
               )}
             </div>
 
-            {/* Cardio Ratio & Diet - RESPONSIVE GRID */}
+            {/* Cardio Ratio & System Info - RESPONSIVE GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3">
-                <h4 className="text-xs sm:text-sm font-medium text-orange-900 mb-1">Rasio Latihan</h4>
+                <h4 className="text-xs sm:text-sm font-medium text-orange-900 mb-1">Training Ratio</h4>
                 <p className="text-xs sm:text-sm text-orange-800 font-medium">
                   {program.cardioRatio || '50% Kardio - 50% Beban'}
                 </p>
               </div>
 
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3">
-                <h4 className="text-xs sm:text-sm font-medium text-purple-900 mb-1">Status Program</h4>
+                <h4 className="text-xs sm:text-sm font-medium text-purple-900 mb-1">System Integration</h4>
                 <p className="text-xs sm:text-sm text-purple-800">
-                  {program.isActive !== false ? '✅ Program Aktif' : '❌ Program Nonaktif'}
+                  ✅ Forward Chaining Ready
                 </p>
               </div>
             </div>
@@ -149,7 +139,7 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
             {/* Diet Recommendation */}
             {program.dietRecommendation && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
-                <h4 className="text-xs sm:text-sm font-medium text-green-900 mb-1">Rekomendasi Diet</h4>
+                <h4 className="text-xs sm:text-sm font-medium text-green-900 mb-1">Diet Recommendation</h4>
                 <p className="text-xs sm:text-sm text-green-800 leading-relaxed whitespace-pre-line">
                   {program.dietRecommendation}
                 </p>
@@ -158,7 +148,7 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
 
             {/* Schedule */}
             <div>
-              <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">Jadwal Latihan 7 Hari</h4>
+              <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">7-Day Training Schedule</h4>
               
               {/* Mobile Schedule - ALWAYS CARDS */}
               <div className="space-y-2 sm:space-y-3">
@@ -168,7 +158,7 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
                       <h5 className="text-xs sm:text-sm font-medium text-gray-900">{day}</h5>
                     </div>
                     <div className="text-xs sm:text-sm text-gray-600 whitespace-pre-line">
-                      {exercise || <span className="text-gray-400 italic">Belum ada jadwal</span>}
+                      {exercise || <span className="text-gray-400 italic">No schedule set</span>}
                     </div>
                   </div>
                 ))}
@@ -178,7 +168,7 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
             {/* Progress Bar */}
             <div>
               <div className="flex justify-between text-xs sm:text-sm mb-1">
-                <span className="text-gray-600">Kelengkapan Program:</span>
+                <span className="text-gray-600">Content Completion:</span>
                 <span className="font-medium">{completion.percentage}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -190,20 +180,9 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
                   style={{ width: `${completion.percentage}%` }}
                 ></div>
               </div>
-            </div>
-
-            {/* System Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
-              <div className="flex items-start">
-                <InformationCircleIcon className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="text-xs sm:text-sm font-medium text-blue-900 mb-1">Medical Logic System</h4>
-                  <p className="text-xs text-blue-800">
-                    Program ini adalah bagian dari 10 program yang sudah ter-validasi secara medis. 
-                    Forward chaining engine akan mengarahkan user dengan kondisi <strong>{getBMICategoryDisplay(program.bmiCategory)} + {getBodyFatCategoryDisplay(program.bodyFatCategory)}</strong> ke program ini.
-                  </p>
-                </div>
-              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {completion.completed} of {completion.total} required fields completed
+              </p>
             </div>
           </div>
 
@@ -213,7 +192,7 @@ const ProgramDetailModal = ({ isOpen, onClose, program }) => {
               onClick={onClose}
               className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
             >
-              Tutup
+              Close
             </button>
           </div>
         </div>

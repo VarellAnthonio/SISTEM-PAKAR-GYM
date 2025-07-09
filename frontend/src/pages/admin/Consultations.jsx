@@ -463,22 +463,6 @@ Consultation Details:
             </div>
           </div>
         )}
-
-        {/* System Performance Indicator */}
-        <div className="mt-8 bg-green-50 rounded-lg p-4 border border-green-200">
-          <div className="flex items-center space-x-3">
-            <div className="bg-green-100 rounded-full p-2">
-              <ChartBarIcon className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <h4 className="text-sm font-medium text-green-900">Forward Chaining System</h4>
-              <p className="text-sm text-green-700">
-                All consultations processed successfully with 100% medical logic coverage.
-                System is operating optimally.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </AdminSidebarLayout>
   );

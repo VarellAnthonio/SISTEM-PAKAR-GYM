@@ -8,7 +8,8 @@ import {
   EyeIcon, 
   CheckCircleIcon,
   ClipboardDocumentListIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { programService } from '../../services/program';
 import toast from 'react-hot-toast';
@@ -135,7 +136,6 @@ const AdminPrograms = () => {
     );
   }
 
-  const activePrograms = programs.filter(p => p.isActive !== false);
   const completedPrograms = programs.filter(p => getCompletionPercentage(p) === 100);
 
   return (
@@ -145,12 +145,12 @@ const AdminPrograms = () => {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Program Management</h1>
           <p className="text-gray-600">
-            Manage 10 medically validated exercise programs
+            Manage 10 medically validated exercise programs - Content editing only
           </p>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Stats Overview - SIMPLIFIED */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="bg-blue-100 rounded-lg p-3 mr-4">
@@ -159,6 +159,7 @@ const AdminPrograms = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Programs</p>
                 <p className="text-2xl font-bold text-gray-900">{programs.length}</p>
+                <p className="text-xs text-blue-600">medically validated</p>
               </div>
             </div>
           </div>
@@ -169,20 +170,9 @@ const AdminPrograms = () => {
                 <CheckCircleIcon className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Programs</p>
-                <p className="text-2xl font-bold text-gray-900">{activePrograms.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="bg-purple-100 rounded-lg p-3 mr-4">
-                <ChartBarIcon className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-sm font-medium text-gray-600">Completed Content</p>
                 <p className="text-2xl font-bold text-gray-900">{completedPrograms.length}</p>
+                <p className="text-xs text-green-600">programs ready</p>
               </div>
             </div>
           </div>
@@ -202,7 +192,7 @@ const AdminPrograms = () => {
           </div>
         </div>
 
-        {/* Programs Grid */}
+        {/* Programs Grid - CLEANED */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredPrograms.map((program) => {
             const completion = getCompletionPercentage(program);
@@ -212,18 +202,11 @@ const AdminPrograms = () => {
                 key={program.id} 
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200"
               >
-                {/* Header */}
+                {/* Header - SIMPLIFIED */}
                 <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                      {program.code}
-                    </span>
-                    {program.isActive !== false && (
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                        Active
-                      </span>
-                    )}
-                  </div>
+                  <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    {program.code}
+                  </span>
                   
                   <div className="flex space-x-2">
                     <button
@@ -236,7 +219,7 @@ const AdminPrograms = () => {
                     <button
                       onClick={() => handleEdit(program)}
                       className="text-blue-400 hover:text-blue-600 transition-colors"
-                      title="Edit Program"
+                      title="Edit Content"
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
@@ -249,7 +232,7 @@ const AdminPrograms = () => {
                     {program.name}
                   </h3>
                   <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                    {program.description}
+                    {program.description || 'No description provided'}
                   </p>
                 </div>
 
@@ -269,8 +252,8 @@ const AdminPrograms = () => {
 
                 {/* Completion Progress */}
                 <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Completion</span>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-600">Content Completion</span>
                     <span className="font-medium">{completion}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -284,19 +267,21 @@ const AdminPrograms = () => {
                   </div>
                 </div>
 
+                
+
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleView(program)}
                     className="flex-1 bg-gray-100 text-gray-700 text-sm py-2 px-3 rounded-md hover:bg-gray-200 transition-colors duration-200"
                   >
-                    View
+                    View Details
                   </button>
                   <button
                     onClick={() => handleEdit(program)}
                     className="flex-1 bg-blue-600 text-white text-sm py-2 px-3 rounded-md hover:bg-blue-700 transition-colors duration-200"
                   >
-                    Edit
+                    Edit Content
                   </button>
                 </div>
               </div>
@@ -314,20 +299,6 @@ const AdminPrograms = () => {
             </p>
           </div>
         )}
-
-        {/* System Info */}
-        <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <div className="flex items-start space-x-3">
-            <CheckCircleIcon className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="text-sm font-medium text-blue-900">Medical Logic System</h4>
-              <p className="text-sm text-blue-700 mt-1">
-                All 10 programs are medically validated and cover realistic BMI + Body Fat combinations.
-                The forward chaining system is operating at 100% coverage.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Modals */}
         <ProgramDetailModal
