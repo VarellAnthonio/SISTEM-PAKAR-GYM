@@ -7,17 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "seed": "node seeds/masterSeed.js",
-    "seed:admin": "node seeds/seedAdmin.js",
-    "seed:programs": "node seeds/seedPrograms.js",
-    "seed:exercises": "node seeds/seedExercises.js",
-    "seed:all": "npm run seed",
-    "db:reset": "npm run seed",
-    "db:exercises": "npm run seed:exercises",
-    "db:exercises:only": "node seeds/seedExercises.js",
-    "test": "echo \"No tests specified\" && exit 0",
-    "lint": "eslint . --ext .js",
-    "lint:fix": "eslint . --ext .js --fix"
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [
     "expert-system",
@@ -30,7 +20,7 @@
     "exercise-management",
     "youtube-integration"
   ],
-  "author": "Your Name",
+  "author": "Varell Anthonio",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -52,13 +42,5 @@
   },
   "engines": {
     "node": ">=16.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/fitness-expert-system.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/fitness-expert-system/issues"
-  },
-  "homepage": "https://github.com/yourusername/fitness-expert-system#readme"
+  }
 }

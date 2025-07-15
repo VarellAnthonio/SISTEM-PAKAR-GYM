@@ -311,29 +311,6 @@ const Register = () => {
             </p>
           </div>
         </div>
-
-        {/* Features Info */}
-        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-          <h4 className="text-xs font-medium text-green-800 mb-2 text-center">Yang Akan Anda Dapatkan</h4>
-          <div className="space-y-1 text-xs text-green-700">
-            <div className="flex items-center">
-              <span className="mr-2">✓</span>
-              <span>Konsultasi program olahraga dengan forward chaining</span>
-            </div>
-            <div className="flex items-center">
-              <span className="mr-2">✓</span>
-              <span>Rekomendasi berdasarkan BMI dan body fat</span>
-            </div>
-            <div className="flex items-center">
-              <span className="mr-2">✓</span>
-              <span>Database latihan dengan video tutorial</span>
-            </div>
-            <div className="flex items-center">
-              <span className="mr-2">✓</span>
-              <span>Export hasil konsultasi ke PDF</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

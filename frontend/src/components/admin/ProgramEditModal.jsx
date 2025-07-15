@@ -386,18 +386,6 @@ const ProgramEditModal = ({
                       Include calorie guidance, macronutrient ratios, meal timing, and specific food recommendations
                     </p>
                   </div>
-
-                  {/* Diet Guidelines */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
-                    <h3 className="text-xs sm:text-sm font-medium text-green-900 mb-1">Diet Content Guidelines</h3>
-                    <ul className="text-xs text-green-800 space-y-1">
-                      <li>• Include specific calorie targets based on program goals</li>
-                      <li>• Provide macronutrient ratios (protein, carbs, fats)</li>
-                      <li>• Suggest meal timing relative to workouts</li>
-                      <li>• List recommended and avoided foods</li>
-                      <li>• Include hydration guidelines</li>
-                    </ul>
-                  </div>
                 </div>
               )}
             </div>

@@ -382,15 +382,6 @@ const ExerciseModal = ({
                     title={formData.name}
                     className="w-full h-96"
                   />
-                  
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Informasi Video</h4>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p><strong>Gerakan:</strong> {formData.name}</p>
-                      <p><strong>Video ID:</strong> {videoId}</p>
-                      <p><strong>URL:</strong> <a href={formData.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{formData.youtubeUrl}</a></p>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
