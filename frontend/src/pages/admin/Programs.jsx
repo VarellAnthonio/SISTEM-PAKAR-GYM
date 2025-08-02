@@ -42,11 +42,11 @@ const AdminPrograms = () => {
         });
         setPrograms(sortedPrograms);
       } else {
-        toast.error(result.message || 'Failed to load programs');
+        toast.error(result.message || 'Gagal memuat program');
       }
     } catch (error) {
       console.error('Error fetching programs:', error);
-      toast.error('Failed to load programs');
+      toast.error('Gagal memuat program');
     } finally {
       setLoading(false);
     }
@@ -73,16 +73,16 @@ const AdminPrograms = () => {
       const result = await programService.admin.update(selectedProgram.id, formData);
 
       if (result.success) {
-        toast.success('Program updated successfully');
+        toast.success('Program berhasil diperbarui');
         await fetchPrograms();
         setShowEditModal(false);
         setSelectedProgram(null);
       } else {
-        throw new Error(result.message || 'Failed to update program');
+        throw new Error(result.message || 'Gagal memperbarui program');
       }
     } catch (error) {
       console.error('Save program error:', error);
-      toast.error(error.message || 'Failed to update program');
+      toast.error(error.message || 'Gagal memperbarui program');
       throw error;
     } finally {
       setSaveLoading(false);
@@ -107,9 +107,9 @@ const AdminPrograms = () => {
 
   const getBodyFatCategoryDisplay = (category) => {
     const mapping = {
-      'L1': 'Low',
+      'L1': 'Rendah',
       'L2': 'Normal',
-      'L3': 'High'
+      'L3': 'Tinggi'
     };
     return mapping[category] || category;
   };
@@ -143,9 +143,9 @@ const AdminPrograms = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Program Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Kelola Program</h1>
           <p className="text-gray-600">
-            Manage 10 medically validated exercise programs - Content editing only
+            Kelola 10 program olahraga yang sudah divalidasi - Hanya edit konten
           </p>
         </div>
 
@@ -157,9 +157,8 @@ const AdminPrograms = () => {
                 <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Programs</p>
+                <p className="text-sm font-medium text-gray-600">Total Program</p>
                 <p className="text-2xl font-bold text-gray-900">{programs.length}</p>
-                <p className="text-xs text-blue-600">medically validated</p>
               </div>
             </div>
           </div>
@@ -170,9 +169,8 @@ const AdminPrograms = () => {
                 <CheckCircleIcon className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Completed Content</p>
+                <p className="text-sm font-medium text-gray-600">Konten Lengkap</p>
                 <p className="text-2xl font-bold text-gray-900">{completedPrograms.length}</p>
-                <p className="text-xs text-green-600">programs ready</p>
               </div>
             </div>
           </div>
@@ -183,7 +181,7 @@ const AdminPrograms = () => {
           <div className="relative max-w-md">
             <input
               type="text"
-              placeholder="Search programs..."
+              placeholder="Cari program..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -212,14 +210,14 @@ const AdminPrograms = () => {
                     <button
                       onClick={() => handleView(program)}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
-                      title="View Details"
+                      title="Lihat Detail"
                     >
                       <EyeIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleEdit(program)}
                       className="text-blue-400 hover:text-blue-600 transition-colors"
-                      title="Edit Content"
+                      title="Edit Konten"
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
@@ -232,13 +230,13 @@ const AdminPrograms = () => {
                     {program.name}
                   </h3>
                   <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                    {program.description || 'No description provided'}
+                    {program.description || 'Belum ada deskripsi'}
                   </p>
                 </div>
 
                 {/* Target Condition */}
                 <div className="mb-4">
-                  <p className="text-xs text-gray-500 mb-2">Target Condition</p>
+                  <p className="text-xs text-gray-500 mb-2">Target Kondisi</p>
                   <div className="flex items-center space-x-2 text-sm">
                     <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
                       {getBMICategoryDisplay(program.bmiCategory)}
@@ -253,7 +251,7 @@ const AdminPrograms = () => {
                 {/* Completion Progress */}
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Content Completion</span>
+                    <span className="text-gray-600">Kelengkapan Konten</span>
                     <span className="font-medium">{completion}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -267,21 +265,19 @@ const AdminPrograms = () => {
                   </div>
                 </div>
 
-                
-
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleView(program)}
                     className="flex-1 bg-gray-100 text-gray-700 text-sm py-2 px-3 rounded-md hover:bg-gray-200 transition-colors duration-200"
                   >
-                    View Details
+                    Lihat Detail
                   </button>
                   <button
                     onClick={() => handleEdit(program)}
                     className="flex-1 bg-blue-600 text-white text-sm py-2 px-3 rounded-md hover:bg-blue-700 transition-colors duration-200"
                   >
-                    Edit Content
+                    Edit Konten
                   </button>
                 </div>
               </div>
@@ -293,9 +289,9 @@ const AdminPrograms = () => {
         {filteredPrograms.length === 0 && (
           <div className="text-center py-12">
             <ClipboardDocumentListIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No programs found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak ada program ditemukan</h3>
             <p className="text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms' : 'No programs available'}
+              {searchTerm ? 'Coba sesuaikan kata kunci pencarian' : 'Tidak ada program tersedia'}
             </p>
           </div>
         )}

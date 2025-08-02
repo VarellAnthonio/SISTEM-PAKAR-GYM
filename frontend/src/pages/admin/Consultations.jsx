@@ -114,7 +114,7 @@ const AdminConsultations = () => {
         minute: '2-digit'
       });
     } catch (error) {
-      return 'Invalid Date';
+      return 'Tanggal Tidak Valid';
     }
   };
 
@@ -148,26 +148,26 @@ const AdminConsultations = () => {
 
   const getBodyFatDisplay = (category) => {
     const mapping = {
-      'L1': 'Low',
+      'L1': 'Rendah',
       'L2': 'Normal',
-      'L3': 'High'
+      'L3': 'Tinggi'
     };
     return mapping[category] || category || 'N/A';
   };
 
   const handleViewDetail = (consultation) => {
     if (!consultation || !consultation.id) {
-      toast.error('Invalid consultation data');
+      toast.error('Data konsultasi tidak valid');
       return;
     }
 
     const detailInfo = `
-Consultation Details:
-- User: ${consultation.user?.name || 'N/A'} (${consultation.user?.email || 'N/A'})
+Detail Konsultasi:
+- Pengguna: ${consultation.user?.name || 'N/A'} (${consultation.user?.email || 'N/A'})
 - Program: ${consultation.program?.code || 'N/A'} - ${consultation.program?.name || 'N/A'}
 - BMI: ${consultation.bmi || 'N/A'} (${getBMIDisplay(consultation.bmiCategory)})
-- Body Fat: ${consultation.bodyFatPercentage || 'N/A'}% (${getBodyFatDisplay(consultation.bodyFatCategory)})
-- Date: ${formatDate(consultation.createdAt)}
+- Lemak Tubuh: ${consultation.bodyFatPercentage || 'N/A'}% (${getBodyFatDisplay(consultation.bodyFatCategory)})
+- Tanggal: ${formatDate(consultation.createdAt)}
 - Status: ${consultation.status || 'N/A'}
     `.trim();
 
@@ -180,7 +180,7 @@ Consultation Details:
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading consultations...</p>
+            <p className="text-gray-600">Memuat konsultasi...</p>
           </div>
         </div>
       </AdminSidebarLayout>
@@ -192,8 +192,8 @@ Consultation Details:
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Consultation History</h1>
-          <p className="text-gray-600">Monitor all user consultations and system usage</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Riwayat Konsultasi</h1>
+          <p className="text-gray-600">Pantau semua konsultasi pengguna dan penggunaan sistem</p>
         </div>
 
         {/* Stats Cards */}
@@ -204,7 +204,7 @@ Consultation Details:
                 <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Consultations</p>
+                <p className="text-sm font-medium text-gray-600">Total Konsultasi</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
               </div>
             </div>
@@ -216,7 +216,7 @@ Consultation Details:
                 <ClockIcon className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Today</p>
+                <p className="text-sm font-medium text-gray-600">Hari Ini</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.today}</p>
               </div>
             </div>
@@ -228,7 +228,7 @@ Consultation Details:
                 <UserIcon className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-sm font-medium text-gray-600">Pengguna Aktif</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
               </div>
             </div>
@@ -240,7 +240,7 @@ Consultation Details:
                 <ChartBarIcon className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Popular Program</p>
+                <p className="text-sm font-medium text-gray-600">Program Populer</p>
                 <p className="text-lg font-bold text-gray-900">
                   {stats.popularProgram ? stats.popularProgram.program?.code || 'N/A' : 'N/A'}
                 </p>
@@ -254,7 +254,7 @@ Consultation Details:
           <div className="relative max-w-md">
             <input
               type="text"
-              placeholder="Search by user name or email..."
+              placeholder="Cari berdasarkan nama atau email pengguna..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -271,19 +271,19 @@ Consultation Details:
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
+                    Pengguna
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Program
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Health Data
+                    Data Kesehatan
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                    Tanggal
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Aksi
                   </th>
                 </tr>
               </thead>
@@ -297,10 +297,10 @@ Consultation Details:
                         </div>
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {consultation.user?.name || 'Unknown User'}
+                            {consultation.user?.name || 'Pengguna Tidak Dikenal'}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {consultation.user?.email || 'No email'}
+                            {consultation.user?.email || 'Tidak ada email'}
                           </div>
                         </div>
                       </div>
@@ -312,13 +312,13 @@ Consultation Details:
                         </span>
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {consultation.program?.name || 'Program not available'}
+                        {consultation.program?.name || 'Program tidak tersedia'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <div>BMI: {consultation.bmi || 'N/A'}</div>
-                        <div>Body Fat: {consultation.bodyFatPercentage || 'N/A'}%</div>
+                        <div>Lemak Tubuh: {consultation.bodyFatPercentage || 'N/A'}%</div>
                       </div>
                       <div className="text-xs text-gray-500">
                         {getBMIDisplay(consultation.bmiCategory)} • {getBodyFatDisplay(consultation.bodyFatCategory)}
@@ -333,7 +333,7 @@ Consultation Details:
                         className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
                       >
                         <EyeIcon className="h-4 w-4 mr-1" />
-                        View
+                        Lihat
                       </button>
                     </td>
                   </tr>
@@ -353,10 +353,10 @@ Consultation Details:
                     </div>
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {consultation.user?.name || 'Unknown User'}
+                        {consultation.user?.name || 'Pengguna Tidak Dikenal'}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {consultation.user?.email || 'No email'}
+                        {consultation.user?.email || 'Tidak ada email'}
                       </div>
                     </div>
                   </div>
@@ -364,7 +364,7 @@ Consultation Details:
                     onClick={() => handleViewDetail(consultation)}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                   >
-                    View
+                    Lihat
                   </button>
                 </div>
                 
@@ -373,7 +373,7 @@ Consultation Details:
                     {consultation.program?.code || 'N/A'}
                   </span>
                   <span className="text-sm text-gray-600">
-                    {consultation.program?.name || 'Program not available'}
+                    {consultation.program?.name || 'Program tidak tersedia'}
                   </span>
                 </div>
                 
@@ -383,7 +383,7 @@ Consultation Details:
                     <span className="ml-1 font-medium">{consultation.bmi || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Body Fat:</span>
+                    <span className="text-gray-600">Lemak Tubuh:</span>
                     <span className="ml-1 font-medium">{consultation.bodyFatPercentage || 'N/A'}%</span>
                   </div>
                 </div>
@@ -400,12 +400,12 @@ Consultation Details:
             <div className="text-center py-12">
               <ClipboardDocumentListIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchTerm ? 'No consultations found' : 'No consultations yet'}
+                {searchTerm ? 'Tidak ada konsultasi ditemukan' : 'Belum ada konsultasi'}
               </h3>
               <p className="text-gray-500">
                 {searchTerm 
-                  ? 'Try adjusting your search terms' 
-                  : 'User consultations will appear here'}
+                  ? 'Coba sesuaikan kata kunci pencarian' 
+                  : 'Konsultasi pengguna akan muncul di sini'}
               </p>
             </div>
           )}
@@ -415,7 +415,7 @@ Consultation Details:
         {pagination.totalPages > 1 && (
           <div className="mt-6 flex justify-between items-center">
             <div className="text-sm text-gray-700">
-              Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} consultations
+              Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} konsultasi
             </div>
             <div className="flex space-x-2">
               <button
@@ -423,7 +423,7 @@ Consultation Details:
                 disabled={pagination.page === 1}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                Previous
+                Sebelumnya
               </button>
               
               {[...Array(Math.min(pagination.totalPages, 5))].map((_, i) => {
@@ -458,7 +458,7 @@ Consultation Details:
                 disabled={pagination.page === pagination.totalPages}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                Next
+                Selanjutnya
               </button>
             </div>
           </div>

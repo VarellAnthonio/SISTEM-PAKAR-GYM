@@ -102,7 +102,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Riwayat Konsultasi',
-      description: 'Monitor konsultasi user',
+      description: 'Monitor konsultasi pengguna',
       icon: ChartBarIcon,
       color: 'bg-orange-500',
       textColor: 'text-orange-600',
@@ -112,7 +112,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Aturan Sistem',
-      description: 'Forward chaining rules',
+      description: 'Aturan forward chaining',
       icon: CogIcon,
       color: 'bg-purple-500',
       textColor: 'text-purple-600',
@@ -128,7 +128,7 @@ const AdminDashboard = () => {
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading dashboard...</p>
+            <p className="text-gray-600">Memuat dashboard...</p>
           </div>
         </div>
       </AdminSidebarLayout>
@@ -142,16 +142,16 @@ const AdminDashboard = () => {
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.name}!</h1>
+              <h1 className="text-2xl font-bold mb-2">Selamat datang kembali, {user?.name}!</h1>
               <p className="text-blue-100">
-                Manage your fitness expert system from this dashboard
+                Kelola sistem pakar fitness Anda dari dashboard ini
               </p>
             </div>
             <div className="text-right">
-              <div className="text-blue-100 text-sm">System Status</div>
+              <div className="text-blue-100 text-sm">Status Sistem</div>
               <div className="flex items-center text-white">
                 <CheckCircleIcon className="h-5 w-5 mr-2" />
-                <span className="font-medium">All Systems Operational</span>
+                <span className="font-medium">Semua Sistem Beroperasi Normal</span>
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@ const AdminDashboard = () => {
                 <UsersIcon className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-sm font-medium text-gray-600">Total Pengguna</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.users}</p>
               </div>
             </div>
@@ -177,7 +177,7 @@ const AdminDashboard = () => {
                 <ChartBarIcon className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Consultations</p>
+                <p className="text-sm font-medium text-gray-600">Konsultasi</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.consultations}</p>
               </div>
             </div>
@@ -189,7 +189,7 @@ const AdminDashboard = () => {
                 <ClockIcon className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Today</p>
+                <p className="text-sm font-medium text-gray-600">Hari Ini</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {consultationStats?.today || 0}
                 </p>
@@ -203,7 +203,7 @@ const AdminDashboard = () => {
                 <ArrowTrendingUpIcon className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-sm font-medium text-gray-600">Pengguna Aktif</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {consultationStats?.activeUsers || 0}
                 </p>
@@ -214,7 +214,7 @@ const AdminDashboard = () => {
 
         {/* Quick Actions */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Aksi Cepat</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {quickActions.map((action) => (
               <button
@@ -243,25 +243,25 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* System Overview */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ringkasan Sistem</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">Expert System Engine</span>
+                <span className="text-gray-600">Mesin Sistem Pakar</span>
                 <span className="flex items-center text-green-600">
                   <CheckCircleIcon className="h-4 w-4 mr-1" />
-                  Active
+                  Aktif
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">Forward Chaining Rules</span>
-                <span className="font-medium text-gray-900">{stats.rules} Rules</span>
+                <span className="text-gray-600">Aturan Forward Chaining</span>
+                <span className="font-medium text-gray-900">{stats.rules} Aturan</span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">Exercise Database</span>
-                <span className="font-medium text-gray-900">{stats.exercises} Exercises</span>
+                <span className="text-gray-600">Database Latihan</span>
+                <span className="font-medium text-gray-900">{stats.exercises} Latihan</span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">Program Coverage</span>
+                <span className="text-gray-600">Cakupan Program</span>
                 <span className="font-medium text-gray-900">100%</span>
               </div>
             </div>
@@ -269,7 +269,7 @@ const AdminDashboard = () => {
 
           {/* Recent Consultations */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Consultations</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Konsultasi Terbaru</h3>
             <div className="space-y-3">
               {recentConsultations.length > 0 ? (
                 recentConsultations.map((consultation) => (
@@ -279,10 +279,10 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-900">
-                        <span className="font-medium">{consultation.user?.name || 'Unknown User'}</span> consulted
+                        <span className="font-medium">{consultation.user?.name || 'Pengguna Tidak Dikenal'}</span> berkonsultasi
                       </p>
                       <p className="text-xs text-gray-500">
-                        Program: {consultation.program?.code || 'N/A'} - BMI: {consultation.bmi || 'N/A'}, Body Fat: {consultation.bodyFatPercentage || 'N/A'}%
+                        Program: {consultation.program?.code || 'N/A'} - BMI: {consultation.bmi || 'N/A'}, Lemak Tubuh: {consultation.bodyFatPercentage || 'N/A'}%
                       </p>
                       <p className="text-xs text-gray-400">
                         {new Date(consultation.createdAt).toLocaleDateString('id-ID', {
@@ -296,14 +296,14 @@ const AdminDashboard = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm">No recent consultations</p>
+                <p className="text-gray-500 text-sm">Tidak ada konsultasi terbaru</p>
               )}
             </div>
             <button 
               onClick={() => navigate('/admin/consultations')}
               className="w-full mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              View all consultations →
+              Lihat semua konsultasi →
             </button>
           </div>
         </div>
@@ -313,7 +313,7 @@ const AdminDashboard = () => {
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-green-900 mb-1">Most Popular Program</h3>
+                <h3 className="text-lg font-semibold text-green-900 mb-1">Program Paling Populer</h3>
                 <p className="text-green-700">
                   <span className="font-bold text-2xl">
                     {consultationStats.programStats[0].program?.code}
@@ -322,7 +322,7 @@ const AdminDashboard = () => {
                   {consultationStats.programStats[0].program?.name}
                 </p>
                 <p className="text-sm text-green-600 mt-1">
-                  {consultationStats.programStats[0].count} consultations this month
+                  {consultationStats.programStats[0].count} konsultasi bulan ini
                 </p>
               </div>
               <div className="text-right">
@@ -330,7 +330,7 @@ const AdminDashboard = () => {
                   onClick={() => navigate('/admin/programs')}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                 >
-                  View Programs
+                  Lihat Program
                 </button>
               </div>
             </div>
