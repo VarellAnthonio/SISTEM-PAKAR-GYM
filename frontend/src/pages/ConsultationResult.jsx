@@ -399,8 +399,8 @@ const ConsultationResult = () => {
       }
 
       // Safety Guidelines
-      addSectionHeader('PANDUAN KEAMANAN', [239, 68, 68]);
-      
+      addSectionHeader('PANDUAN KEAMANAN & PELAKSANAAN', [239, 68, 68]);
+
       addFormattedText('SEBELUM MEMULAI:', 10, 'bold', [153, 27, 27]);
       const beforeTips = [
         '• Konsultasikan dengan dokter sebelum memulai program latihan',
@@ -408,15 +408,27 @@ const ConsultationResult = () => {
         '• Pendinginan dengan stretching setelah latihan'
       ];
       beforeTips.forEach(tip => addFormattedText(tip, 8, 'normal', [55, 65, 81]));
-      
+
+      addFormattedText('PENENTUAN BERAT BEBAN:', 10, 'bold', [153, 27, 27]);
+      const weightTips = [
+        '• Pemula: Mulai 40-50% dari berat badan (contoh: BB 60kg = 24-30kg)',
+        '• Menengah: 60-70% dari berat badan (contoh: BB 60kg = 36-42kg)', 
+        '• Lanjutan: 80-100% dari berat badan (contoh: BB 60kg = 48-60kg)',
+        '• Test 1RM: Berat maksimal yang bisa diangkat 1 kali dengan teknik benar',
+        '• Progression: Tambah beban 2.5-5kg per minggu jika sudah mudah',
+        '• Rep Target: Jika bisa > 12 reps mudah, tingkatkan beban'
+      ];
+      weightTips.forEach(tip => addFormattedText(tip, 8, 'normal', [55, 65, 81]));
+
       addFormattedText('HENTIKAN LATIHAN JIKA:', 10, 'bold', [153, 27, 27]);
       const stopTips = [
         '• Merasakan nyeri dada atau sesak napas berlebihan',
         '• Pusing, mual, atau kehilangan kesadaran',
-        '• Nyeri sendi atau otot yang tajam'
+        '• Nyeri sendi atau otot yang tajam',
+        '• Teknik latihan mulai berantakan (form breakdown)'
       ];
       stopTips.forEach(tip => addFormattedText(tip, 8, 'normal', [55, 65, 81]));
-      
+
       addFormattedText('TIPS HIDRASI:', 10, 'bold', [153, 27, 27]);
       const hydrationTips = [
         '• Minum 500-750ml air 2-3 jam sebelum latihan',
@@ -639,7 +651,7 @@ const ConsultationResult = () => {
             {/* Safety Guidelines for Web */}
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <h4 className="font-semibold text-red-900 mb-4 flex items-center">
-                ⚠️ <span className="ml-2">Panduan Keamanan</span>
+                ⚠️ <span className="ml-2">Panduan Keamanan & Pelaksanaan</span>
               </h4>
               
               <div className="space-y-4 text-red-800 text-sm">
@@ -653,11 +665,24 @@ const ConsultationResult = () => {
                 </div>
 
                 <div>
+                  <h5 className="font-medium mb-2">Penentuan Berat Beban:</h5>
+                  <ul className="space-y-1 ml-4 list-disc">
+                    <li><strong>Pemula:</strong> Mulai 40-50% dari berat badan (contoh: BB 60kg = 24-30kg)</li>
+                    <li><strong>Menengah:</strong> 60-70% dari berat badan (contoh: BB 60kg = 36-42kg)</li>
+                    <li><strong>Lanjutan:</strong> 80-100% dari berat badan (contoh: BB 60kg = 48-60kg)</li>
+                    <li><strong>Test 1RM:</strong> Berat maksimal yang bisa diangkat 1 kali dengan teknik benar</li>
+                    <li><strong>Progression:</strong> Tambah beban 2.5-5kg per minggu jika sudah mudah</li>
+                    <li><strong>Rep Target:</strong> Jika bisa lebih dari 12 reps mudah, tingkatkan beban</li>
+                  </ul>
+                </div>
+
+                <div>
                   <h5 className="font-medium mb-2">Hentikan Latihan Jika:</h5>
                   <ul className="space-y-1 ml-4 list-disc">
                     <li>Merasakan nyeri dada atau sesak napas berlebihan</li>
                     <li>Pusing, mual, atau kehilangan kesadaran</li>
                     <li>Nyeri sendi atau otot yang tajam</li>
+                    <li>Teknik latihan mulai berantakan (form breakdown)</li>
                   </ul>
                 </div>
 

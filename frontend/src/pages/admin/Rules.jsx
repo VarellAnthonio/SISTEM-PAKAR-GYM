@@ -317,14 +317,6 @@ const AdminRules = () => {
                     </p>
                   </div>
                 </div>
-
-                {/* Rule Logic */}
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <h4 className="text-xs font-medium text-gray-600 mb-1">Forward Chaining Logic:</h4>
-                  <p className="text-xs text-gray-700 font-mono">
-                    IF BMI={rule.bmiCategory} AND BodyFat={rule.bodyFatCategory} → {getProgramCode(rule)}
-                  </p>
-                </div>
               </div>
             ))}
           </div>
@@ -387,14 +379,6 @@ const AdminRules = () => {
                       {rule.description}
                     </p>
                   </div>
-                </div>
-
-                {/* Simple Logic */}
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <h4 className="text-xs font-medium text-gray-600 mb-1">Simple Forward Chaining:</h4>
-                  <p className="text-xs text-gray-700 font-mono">
-                    IF BMI={rule.bmiCategory} (no body fat data) → {rule.programCode}
-                  </p>
                 </div>
               </div>
             ))}
